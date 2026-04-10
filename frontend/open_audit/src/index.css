@@ -503,6 +503,128 @@ body {
   cursor: not-allowed;
 }
 
+.share-report-panel {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.share-report-title {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.share-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.share-report-button {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  margin: 0;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.share-report-button-primary {
+  background: #1d6dff;
+  color: #fff;
+  border-color: #1d6dff;
+}
+
+.share-report-button-primary:hover {
+  background: #0d4eff;
+}
+
+.share-report-button-soft {
+  background: #f0f2f5;
+  color: #000;
+  border-color: #e2e8f0;
+}
+
+.share-report-button-soft:hover {
+  background: #e8ecf4;
+}
+
+.share-report-button-green {
+  background: #1a9e5c;
+  color: #fff;
+  border-color: #1a9e5c;
+}
+
+.share-report-button-green:hover {
+  background: #12864b;
+}
+
+.share-report-button-gold {
+  background: #d4920a;
+  color: #fff;
+  border-color: #d4920a;
+}
+
+.share-report-button-gold:hover {
+  background: #b97d07;
+}
+
+.share-report-manual {
+  margin-top: 18px;
+  color: #6b7280;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.share-report-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.share-report-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.share-report-link:hover {
+  transform: translateY(-1px);
+}
+
+.share-report-link-whatsapp {
+  background: #1a9e5c;
+}
+
+.share-report-link-whatsapp:hover {
+  background: #12864b;
+}
+
+.share-report-link-email {
+  background: var(--navy);
+}
+
+.share-report-link-email:hover {
+  background: #081538;
+}
+
+.share-report-message {
+  margin-top: 14px;
+  color: #6b7280;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 /* ══════════════════════════════════════ */
 /*               HISTORY                 */
 /* ══════════════════════════════════════ */

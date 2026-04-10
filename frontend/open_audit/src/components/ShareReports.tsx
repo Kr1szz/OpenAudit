@@ -20,7 +20,14 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
 
     const response = await fetch(fileUrl, { headers });
     if (!response.ok) {
-      throw new Error('Unable to fetch report file.');
+      let errorMessage = 'Unable to fetch report file.';
+      try {
+        const data = await response.json();
+        errorMessage = data?.error || errorMessage;
+      } catch {
+        // Keep the generic message when the server does not return JSON.
+      }
+      throw new Error(errorMessage);
     }
     return await response.blob();
   };
@@ -35,6 +42,12 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(downloadUrl);
+  };
+
+  const openPdfBlob = (blob: Blob) => {
+    const previewUrl = URL.createObjectURL(blob);
+    window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
   };
 
   const handleShare = async () => {
@@ -72,66 +85,78 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
     }
   };
 
-  const handlePreview = () => {
-    window.open(fileUrl, '_blank');
+  const handlePreview = async () => {
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const blob = await fetchPdfBlob();
+      openPdfBlob(blob);
+      setMessage('Report preview opened.');
+    } catch (err: any) {
+      setMessage(err?.message || 'Failed to preview the report.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">Share Report</h3>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <div className="share-report-panel">
+      <div className="calc-section-title share-report-title">Share Report</div>
+      <div className="share-report-grid">
         <button
           type="button"
           onClick={handleShare}
           disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded transition"
+          className="run-pill share-report-button share-report-button-primary"
         >
           {loading ? 'Preparing...' : 'Share Report'}
         </button>
         <button
           type="button"
           onClick={handlePreview}
-          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold py-3 px-4 rounded transition"
+          disabled={loading}
+          className="run-pill share-report-button share-report-button-soft"
         >
           Preview Report
         </button>
         <button
           type="button"
           onClick={triggerDownload}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded transition"
+          className="run-pill share-report-button share-report-button-green"
         >
           Download Report
         </button>
         <button
           type="button"
           onClick={handleCopyLink}
-          className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded transition"
+          className="run-pill share-report-button share-report-button-gold"
         >
           Copy Link
         </button>
       </div>
 
-      <div className="mt-4 text-sm text-gray-600 space-y-2">
+      <div className="share-report-manual">
         <p>Manual sharing options:</p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="share-report-links">
           <a
             href={`https://api.whatsapp.com/send?text=${encodeURIComponent(fileUrl)}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-block w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded"
+            className="share-report-link share-report-link-whatsapp"
           >
             WhatsApp Link
           </a>
           <a
             href={`mailto:?subject=${encodeURIComponent('Financial Report')}&body=${encodeURIComponent('Here is my report: ' + fileUrl)}`}
-            className="inline-block w-full sm:w-auto text-center bg-slate-900 hover:bg-slate-800 text-white py-2 px-3 rounded"
+            className="share-report-link share-report-link-email"
           >
             Email Link
           </a>
         </div>
       </div>
 
-      {message && <p className="mt-4 text-sm text-slate-700">{message}</p>}
+      {message && <p className="share-report-message">{message}</p>}
     </div>
   );
 };

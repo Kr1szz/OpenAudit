@@ -128,7 +128,8 @@ exports.saveTax = async (req, res) => {
             annualIncome = 0,
             investments = 0,
             otherDeductions = 0,
-            rentPaid = 0
+            rentPaid = 0,
+            includeReceipts = false
         } = req.body;
 
         // Recalculate tax to ensure consistency
@@ -138,9 +139,27 @@ exports.saveTax = async (req, res) => {
         };
 
         const income = safeParse(annualIncome);
-        const inv80c = safeParse(investments);
-        const other = safeParse(otherDeductions);
+        let inv80c = safeParse(investments);
+        let other = safeParse(otherDeductions);
         const rent = safeParse(rentPaid);
+
+        if (includeReceipts) {
+            const receiptsResp = await db.query(
+                "SELECT category, sum(amount) as total FROM receipts WHERE user_id = $1 AND is_flagged = false GROUP BY category",
+                [user.id]
+            );
+
+            receiptsResp.rows.forEach(row => {
+                const cat = (row.category || '').toLowerCase();
+                const amount = parseFloat(row.total) || 0;
+
+                if (cat.includes('medical') || cat.includes('health') || cat.includes('education')) {
+                    other += amount;
+                } else if (cat.includes('investment') || cat.includes('insurance') || cat.includes('pf') || cat.includes('80c')) {
+                    inv80c += amount;
+                }
+            });
+        }
 
         // Old Regime
         const basicSalary = income * 0.5;
@@ -223,7 +242,8 @@ exports.saveTax = async (req, res) => {
 
         res.json({
             message: 'Tax analysis saved successfully',
-            transaction: result.rows[0]
+            transaction: result.rows[0],
+            record: result.rows[0]
         });
     } catch (err) {
         console.error(err);

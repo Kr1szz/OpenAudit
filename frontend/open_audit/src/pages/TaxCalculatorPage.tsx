@@ -68,7 +68,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
 
       const data = resp.data;
 
-      const mappedResult = {
+      const mappedResult: any = {
         oldRegimeTax: data.oldRegime?.tax || 0,
         newRegimeTax: data.newRegime?.tax || 0,
         recommendation: data.recommendation || 'New Regime',
@@ -76,6 +76,32 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         finalTax: data.finalTax || Math.min(data.oldRegime?.tax || 0, data.newRegime?.tax || 0),
         payload_record: payload
       };
+
+      try {
+        const saveResponse = await axios.post('http://localhost:5000/api/tax/save', {
+          annualIncome: payload.annualIncome,
+          investments: payload.investments,
+          otherDeductions: payload.otherDeductions,
+          rentPaid: payload.rentPaid,
+          includeReceipts: payload.includeReceipts
+        }, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        mappedResult.savedRecord = saveResponse.data.record || saveResponse.data.transaction;
+        if (mappedResult.savedRecord) {
+          onAddHistory({
+            created_at: new Date().toISOString(),
+            annualincome: mappedResult.savedRecord.annualincome ?? payload.annualIncome,
+            calculated_old_tax: mappedResult.savedRecord.calculated_old_tax ?? mappedResult.oldRegimeTax,
+            calculated_new_tax: mappedResult.savedRecord.calculated_new_tax ?? mappedResult.newRegimeTax,
+            recommendation: mappedResult.savedRecord.recommendation ?? mappedResult.recommendation,
+            savings: mappedResult.savedRecord.savings ?? mappedResult.savings
+          });
+        }
+      } catch (saveErr) {
+        console.error('Failed to save analysis for report sharing:', saveErr);
+      }
 
       setResult(mappedResult);
     } catch (err: any) {
@@ -88,6 +114,13 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
 
   const handleSaveResult = async () => {
     if (!result) return;
+    if (result.savedRecord?.id) {
+      setSuccess("Tax analysis saved successfully.");
+      setTimeout(() => {
+        setSuccess("");
+      }, 2000);
+      return;
+    }
 
     setSaving(true);
     setError("");
@@ -103,12 +136,14 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         finalTax: result.finalTax,
         savings: result.savings,
         recommendation: result.recommendation,
+        includeReceipts: result.payload_record?.includeReceipts ?? true,
       };
 
       const response = await axios.post('http://localhost:5000/api/tax/save', payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      setResult((prev: any) => ({ ...prev, savedRecord: response.data.record }));
+      const savedRecord = response.data.record || response.data.transaction;
+      setResult((prev: any) => ({ ...prev, savedRecord }));
 
       onAddHistory({
         created_at: new Date().toISOString(),
@@ -204,7 +239,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
               
                   </div>
                   {result.savedRecord?.id && (
-                    <ShareReport fileUrl={`http://localhost:5000/reports/${result.savedRecord.id}/download`} />
+                    <ShareReport fileUrl={`http://localhost:5000/api/reports/${result.savedRecord.id}/download`} />
                   )}
                 </div>
               ) : (

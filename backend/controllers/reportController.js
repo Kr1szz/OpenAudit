@@ -1,5 +1,9 @@
 const db = require('../config/db');
 const { generateTaxPdf } = require('../services/pdfService');
+const jwt = require('jsonwebtoken');
+
+const REPORT_SHARE_SECRET = process.env.REPORT_SHARE_SECRET || process.env.JWT_SECRET || 'report-share-secret';
+const REPORT_SHARE_EXPIRES_IN = process.env.REPORT_SHARE_EXPIRES_IN || '7d';
 
 function parseNumber(value) {
   const parsed = Number(value);
@@ -11,8 +15,11 @@ function buildTaxResultFromTransaction(tx) {
   const investments = parseNumber(tx.investments_80c);
   const otherDeductions = parseNumber(tx.other_deductions);
   const rentPaid = parseNumber(tx.rent_paid);
-  const standardDeductionOld = parseNumber(tx.standard_deduction) || 50000;
-  const hraExemption = parseNumber(tx.hra_exemption);
+  const standardDeductionOld = 50000;
+  const basicSalary = annualIncome * 0.5;
+  const hraReceived = basicSalary * 0.4;
+  const rentMinusBasic = rentPaid - (basicSalary * 0.1);
+  const hraExemption = Math.max(0, Math.min(hraReceived, rentMinusBasic, basicSalary * 0.4));
   const standardDeductionNew = 75000;
 
   const oldTaxableIncome = Math.max(0, annualIncome - standardDeductionOld - investments - hraExemption - otherDeductions);
@@ -43,7 +50,10 @@ exports.downloadReport = async (req, res) => {
       return res.status(400).json({ error: 'Invalid report id.' });
     }
 
-    const result = await db.query('SELECT * FROM receipts WHERE id=$1', [reportId]);
+    const result = await db.query(
+      'SELECT * FROM transactions WHERE id=$1 AND user_id=$2',
+      [reportId, req.user.id]
+    );
     if (!result.rows.length) {
       return res.status(404).json({ error: 'Report not found.' });
     }
@@ -59,5 +69,74 @@ exports.downloadReport = async (req, res) => {
   } catch (error) {
     console.error('downloadReport error:', error?.message || error);
     res.status(500).json({ error: 'Unable to generate or download the report.' });
+  }
+};
+
+exports.createShareLink = async (req, res) => {
+  try {
+    const reportId = parseInt(req.params.id, 10);
+    if (Number.isNaN(reportId) || reportId <= 0) {
+      return res.status(400).json({ error: 'Invalid report id.' });
+    }
+
+    const result = await db.query(
+      'SELECT id FROM transactions WHERE id=$1 AND user_id=$2',
+      [reportId, req.user.id]
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const token = jwt.sign(
+      { reportId, userId: req.user.id, purpose: 'report-share' },
+      REPORT_SHARE_SECRET,
+      { expiresIn: REPORT_SHARE_EXPIRES_IN }
+    );
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.json({
+      url: `${baseUrl}/api/reports/${reportId}/public/${token}/download`,
+      expiresIn: REPORT_SHARE_EXPIRES_IN
+    });
+  } catch (error) {
+    console.error('createShareLink error:', error?.message || error);
+    res.status(500).json({ error: 'Unable to create report share link.' });
+  }
+};
+
+exports.downloadPublicReport = async (req, res) => {
+  try {
+    const reportId = parseInt(req.params.id, 10);
+    if (Number.isNaN(reportId) || reportId <= 0) {
+      return res.status(400).json({ error: 'Invalid report id.' });
+    }
+
+    const payload = jwt.verify(req.params.token, REPORT_SHARE_SECRET);
+    if (
+      payload.purpose !== 'report-share' ||
+      Number(payload.reportId) !== reportId ||
+      !payload.userId
+    ) {
+      return res.status(403).json({ error: 'Invalid report share link.' });
+    }
+
+    const result = await db.query(
+      'SELECT * FROM transactions WHERE id=$1 AND user_id=$2',
+      [reportId, payload.userId]
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const taxResult = buildTaxResultFromTransaction(result.rows[0]);
+    const pdfBuffer = await generateTaxPdf(taxResult);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="report.pdf"');
+    res.setHeader('Cache-Control', 'private, max-age=0, no-transform');
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('downloadPublicReport error:', error?.message || error);
+    res.status(403).json({ error: 'Report share link is invalid or expired.' });
   }
 };
