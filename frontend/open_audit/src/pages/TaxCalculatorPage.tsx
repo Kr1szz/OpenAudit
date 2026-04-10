@@ -1,169 +1,196 @@
 import { useState } from 'react';
 import axios from 'axios';
+import type { HistoryEntry } from '../types/index.ts';
 
-interface TaxResult {
-  message: string;
-  oldRegime: {
-    taxableIncome: number;
-    tax: number;
-  };
-  newRegime: {
-    taxableIncome: number;
-    tax: number;
-  };
-  recommendation: string;
-  savedRecord?: any;
-}
-
-function TaxCalculatorPage() {
-  const [formData, setFormData] = useState({
-    annualIncome: '',
-    investments: '',
-    otherDeductions: '',
-    rentPaid: ''
-  });
-  const [result, setResult] = useState<TaxResult | null>(null);
+function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) => void }) {
+  const [basic, setBasic] = useState({ income: "", investments80c: "", rent: "" });
+  const [advanced, setAdvanced] = useState({ medical: "", nps: "", eduLoan: "" });
+  const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleCompute = async () => {
+    if (!basic.income || Number(basic.income) <= 0) {
+      setError("Please enter a valid annual income");
+      return;
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     setLoading(true);
-    setError('');
-    setResult(null);
-
+    setError("");
+    setSuccess("");
     try {
-      // Map to payload format matching the backend
       const payload = {
-        annualIncome: Number(formData.annualIncome) || 0,
-        investments: Number(formData.investments) || 0,
-        otherDeductions: Number(formData.otherDeductions) || 0,
-        rentPaid: Number(formData.rentPaid) || 0,
+        annualIncome: Number(basic.income) || 0,
+        investments: Number(basic.investments80c) || 0,
+        otherDeductions: (Number(advanced.medical) || 0) + (Number(advanced.eduLoan) || 0) + (Number(advanced.nps) || 0),
+        rentPaid: Number(basic.rent) || 0
       };
 
-      const response = await axios.post('http://localhost:3000/api/tax/calculate', payload);
-      setResult(response.data);
+      const resp = await axios.post('http://localhost:5000/api/tax/calculate', payload, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      const data = resp.data;
+
+      const mappedResult = {
+        oldRegimeTax: data.oldRegime?.tax || 0,
+        newRegimeTax: data.newRegime?.tax || 0,
+        recommendation: data.recommendation || 'New Regime',
+        savings: data.savings || 0,
+        finalTax: data.finalTax || Math.min(data.oldRegime?.tax || 0, data.newRegime?.tax || 0),
+        payload_record: payload
+      };
+
+      setResult(mappedResult);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to calculate taxes. Please try again.');
+      console.error(err);
+      setError(err.response?.data?.error || "Failed to calculate tax");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveResult = async () => {
+    if (!result) return;
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const payload = {
+        annualIncome: result.payload_record?.annualIncome || Number(basic.income) || 0,
+        investments: result.payload_record?.investments || Number(basic.investments80c) || 0,
+        otherDeductions: result.payload_record?.otherDeductions || (Number(advanced.medical) || 0) + (Number(advanced.eduLoan) || 0) + (Number(advanced.nps) || 0),
+        rentPaid: result.payload_record?.rentPaid || Number(basic.rent) || 0,
+        oldRegimeTax: result.oldRegimeTax,
+        newRegimeTax: result.newRegimeTax,
+        finalTax: result.finalTax,
+        savings: result.savings,
+        recommendation: result.recommendation,
+      };
+
+      await axios.post('http://localhost:5000/api/tax/save', payload, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      onAddHistory({
+        created_at: new Date().toISOString(),
+        annualIncome: payload.annualIncome,
+        calculated_old_tax: payload.oldRegimeTax,
+        calculated_new_tax: payload.newRegimeTax,
+        recommendation: payload.recommendation,
+        savings: payload.savings
+      });
+
+      setSuccess("Tax analysis saved successfully.");
+      setTimeout(() => {
+        setSuccess("");
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      setError((err as any)?.response?.data?.error || "Failed to save tax analysis");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Smart Tax Calculator</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Form Column */}
-        <div className="bg-white p-6 rounded shadow-md">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Annual Gross Income (Rs)</label>
-              <input
-                type="number"
-                name="annualIncome"
-                value={formData.annualIncome}
-                onChange={handleChange}
-                required
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. 1500000"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Investments under 80C (Rs)</label>
-              <input
-                type="number"
-                name="investments"
-                value={formData.investments}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. 150000"
-              />
-            </div>
+    <div className="screen">
+      <div className="mesh-bg" />
+      <div className="page-container">
+        <div className="page-title">Tax Calculator</div>
 
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Rent Paid Annually (Rs)</label>
-              <input
-                type="number"
-                name="rentPaid"
-                value={formData.rentPaid}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. 240000"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Other Deductions (Rs)</label>
-              <input
-                type="number"
-                name="otherDeductions"
-                value={formData.otherDeductions}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. 50000"
-              />
-            </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition disabled:opacity-50"
-            >
-              {loading ? 'Calculating...' : 'Calculate Tax & Get Recommendation'}
-            </button>
-          </form>
-        </div>
-
-        {/* Results Column */}
-        <div>
-          {result ? (
-            <div className="bg-white p-6 rounded shadow-md h-full flex flex-col justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Calculation Results</h2>
-                
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-700">Old Tax Regime</h3>
-                  <p className="text-sm text-gray-500">Taxable Income: Rs. {result.oldRegime.taxableIncome.toLocaleString('en-IN')}</p>
-                  <p className="text-2xl font-bold text-red-500">Rs. {result.oldRegime.tax.toLocaleString('en-IN')}</p>
-                </div>
-
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-700">New Tax Regime</h3>
-                  <p className="text-sm text-gray-500">Taxable Income: Rs. {result.newRegime.taxableIncome.toLocaleString('en-IN')}</p>
-                  <p className="text-2xl font-bold text-green-600">Rs. {result.newRegime.tax.toLocaleString('en-IN')}</p>
-                </div>
+        <div className="calc-wrapper" style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: '24px', alignItems: 'start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+            <div className="calc-card" style={{ padding: '24px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)', minWidth: 0 }}>
+              <div className="calc-section-title">Basic Details</div>
+              <div className="field-group">
+                <input className="input" placeholder="Annual Income" type="number" value={basic.income} onChange={e => setBasic({ ...basic, income: e.target.value })} />
               </div>
-
-              <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                <h3 className="text-md font-bold text-indigo-800 uppercase tracking-wide">💡 Our Recommendation</h3>
-                <p className="text-xl font-bold text-indigo-900 mt-1">Go with the {result.recommendation}</p>
-                <p className="text-sm text-indigo-700 mt-2">
-                  You will save Rs. {Math.abs(result.oldRegime.tax - result.newRegime.tax).toLocaleString('en-IN')} by choosing this regime.
-                </p>
+              <div className="field-group">
+                <input className="input" placeholder="80C Investments" type="number" value={basic.investments80c} onChange={e => setBasic({ ...basic, investments80c: e.target.value })} />
+              </div>
+              <div className="field-group">
+                <input className="input" placeholder="Rent Paid for HRA" type="number" value={basic.rent} onChange={e => setBasic({ ...basic, rent: e.target.value })} />
               </div>
             </div>
-          ) : (
-            <div className="bg-gray-50 p-6 rounded border border-dashed border-gray-300 h-full flex items-center justify-center text-gray-400 text-center">
-              <p>Fill out the form and hit calculate to see your optimal tax regime comparison and tailored savings recommendation.</p>
+
+            <div className="calc-card" style={{ padding: '24px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)' }}>
+              <div className="calc-section-title">Advanced Deductions</div>
+              <div className="field-group">
+                <input className="input" placeholder="Medical" type="number" value={advanced.medical} onChange={e => setAdvanced({ ...advanced, medical: e.target.value })} />
+              </div>
+              <div className="field-group">
+                <input className="input" placeholder="NPS" type="number" value={advanced.nps} onChange={e => setAdvanced({ ...advanced, nps: e.target.value })} />
+              </div>
+              <div className="field-group">
+                <input className="input" placeholder="Edu Loan" type="number" value={advanced.eduLoan} onChange={e => setAdvanced({ ...advanced, eduLoan: e.target.value })} />
+              </div>
             </div>
-          )}
+
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              <button className="run-pill" onClick={handleCompute} disabled={loading} style={{ flex: '1 1 220px' }}>
+                {loading ? 'Analyzing...' : 'Run Tax Analysis'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="calc-card" style={{ padding: '24px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)', minHeight: '340px' }}>
+              <div className="calc-section-title">Tax Result</div>
+              {result ? (
+                <div style={{ display: 'grid', gap: '18px', marginTop: '18px' }}>
+                  <div>
+                    <div className="field-label">Old Regime Tax</div>
+                    <div className="mono bold" style={{ fontSize: '1.25rem' }}>{(result.oldRegimeTax || 0).toLocaleString('en-IN')} Rs</div>
+                  </div>
+                  <div>
+                    <div className="field-label">New Regime Tax</div>
+                    <div className="mono bold" style={{ fontSize: '1.25rem' }}>{(result.newRegimeTax || 0).toLocaleString('en-IN')} Rs</div>
+                  </div>
+                  <div>
+                    <div className="field-label" style={{ color: '#0d6efd' }}>Recommendation</div>
+                    <div className="bold" style={{ fontSize: '1rem', color: '#0d6efd' }}>{result.recommendation || "New Regime"}</div>
+                  </div>
+                  <div>
+                    <div className="field-label" style={{ color: '#1a9e5c' }}>Total Savings</div>
+                    <div className="mono bold" style={{ fontSize: '1.25rem', color: '#1a9e5c' }}>{(result.savings || 0).toLocaleString('en-IN')} Rs</div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '14px', marginTop: '24px' }}>
+                    <button className="run-pill" onClick={handleSaveResult} disabled={saving} style={{ flex: 1 }}>
+                      {saving ? 'Saving...' : 'Save Analysis'}
+                    </button>
+                    <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
+                      Recalculate
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginTop: '18px', color: '#6b7280', lineHeight: 1.7 }}>
+                  Run the tax analysis to see the result here. Once you are happy with the numbers, click Save Analysis to persist it.
+                </div>
+              )}
+            </div>
+
+            <div style={{ minHeight: '68px', padding: '20px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)', border: '1px solid #e2e8f0' }}>
+              {error ? (
+                <div style={{ color: '#e74c3c', textAlign: 'center', fontWeight: 600 }}>{error}</div>
+              ) : success ? (
+                <div style={{ color: '#1a9e5c', textAlign: 'center', fontWeight: 600 }}>{success}</div>
+              ) : (
+                <div style={{ color: '#6b7280', textAlign: 'center' }}>
+                  Messages and status appear here after running or saving tax analysis.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export default TaxCalculatorPage;
+export default CalculatorScreen;

@@ -7,7 +7,7 @@ class Receipt {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING *
         `;
-        const values = [user_id, org_id || null, file_path, file_type || 'image/jpeg', vendor, amount, currency, receipt_date, timestamp || null, category, JSON.stringify(items || []), confidence_score, is_flagged, anomaly_reasons || [], source, is_shared];
+        const values = [user_id, org_id || null, file_path, file_type || 'image/jpeg', vendor, amount, currency, receipt_date || null, timestamp || null, category, JSON.stringify(items || []), confidence_score, is_flagged, anomaly_reasons || [], source, is_shared];
         const result = await pool.query(query, values);
         return result.rows[0];
     }
@@ -22,6 +22,18 @@ class Receipt {
         query += ' ORDER BY created_at DESC';
         const result = await pool.query(query, values);
         return result.rows;
+    }
+
+    static async findById(id, userId) {
+        const query = 'SELECT * FROM receipts WHERE id = $1 AND user_id = $2';
+        const result = await pool.query(query, [id, userId]);
+        return result.rows[0] || null;
+    }
+
+    static async deleteById(id, userId) {
+        const query = 'DELETE FROM receipts WHERE id = $1 AND user_id = $2 RETURNING *';
+        const result = await pool.query(query, [id, userId]);
+        return result.rows[0] || null;
     }
 
     static async findDuplicates(vendor, amount, userId) {

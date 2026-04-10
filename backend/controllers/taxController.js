@@ -76,16 +76,10 @@ exports.calculateTax = async (req, res) => {
         if (taxableIncomeNew <= 700000) newTax = 0;
 
 
-        // --- 4. SAVE TO DATABASE ---
-        // We save the one that is LOWER (Better for the user)
         const finalTax = Math.min(oldTax, newTax);
         const savings = Math.abs(oldTax - newTax);
         const recommendation = oldTax < newTax ? "Old Regime" : "New Regime";
-        const newRecord = await db.query(
-            `INSERT INTO transactions (user_id, financial_year, annualIncome, investments_80c, rent_paid, calculated_old_tax, calculated_new_tax, final_tax, savings, recommendation) 
-             VALUES ($1, '2025-2026', $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [req.user.id, income, inv80c, rent, oldTax, newTax, finalTax, savings, recommendation]
-        );
+        
         // --- 5. SEND RESULT ---
         res.json({
             message: "Calculation Complete",
@@ -98,7 +92,8 @@ exports.calculateTax = async (req, res) => {
                 tax: newTax
             },
             recommendation,
-            savedRecord: newRecord.rows[0]
+            finalTax,
+            savings
         });
 
     } catch (err) {
@@ -106,15 +101,163 @@ exports.calculateTax = async (req, res) => {
     }
 };
 
+exports.saveTax = async (req, res) => {
+    try {
+        const user = req.user;
+        const {
+            annualIncome = 0,
+            investments = 0,
+            otherDeductions = 0,
+            rentPaid = 0
+        } = req.body;
+
+        // Recalculate tax to ensure consistency
+        const safeParse = (val) => {
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? 0 : parsed;
+        };
+
+        const income = safeParse(annualIncome);
+        const inv80c = safeParse(investments);
+        const other = safeParse(otherDeductions);
+        const rent = safeParse(rentPaid);
+
+        // Old Regime
+        const basicSalary = income * 0.5;
+        const hraReceived = basicSalary * 0.4;
+        const rentMinusBasic = rent - (basicSalary * 0.1);
+        const hraExemption = Math.max(0, Math.min(hraReceived, rentMinusBasic, basicSalary * 0.4));
+        const standardDeductionOld = 50000;
+        const taxableIncomeOld = Math.max(0, income - standardDeductionOld - inv80c - hraExemption - other);
+
+        let oldTax = 0;
+        if (taxableIncomeOld > 1000000) {
+            oldTax += (taxableIncomeOld - 1000000) * 0.30;
+            oldTax += 112500;
+        } else if (taxableIncomeOld > 500000) {
+            oldTax += (taxableIncomeOld - 500000) * 0.20;
+            oldTax += 12500;
+        } else if (taxableIncomeOld > 250000) {
+            oldTax += (taxableIncomeOld - 250000) * 0.05;
+        }
+
+        // New Regime
+        const standardDeductionNew = 75000;
+        const taxableIncomeNew = Math.max(0, income - standardDeductionNew);
+
+        let newTax = 0;
+        let tempIncome = taxableIncomeNew;
+
+        if (tempIncome > 1500000) {
+            newTax += (tempIncome - 1500000) * 0.30;
+            tempIncome = 1500000;
+        }
+        if (tempIncome > 1200000) {
+            newTax += (tempIncome - 1200000) * 0.20;
+            tempIncome = 1200000;
+        }
+        if (tempIncome > 1000000) {
+            newTax += (tempIncome - 1000000) * 0.15;
+            tempIncome = 1000000;
+        }
+        if (tempIncome > 700000) {
+            newTax += (tempIncome - 700000) * 0.10;
+            tempIncome = 700000;
+        }
+        if (tempIncome > 300000) {
+            newTax += (tempIncome - 300000) * 0.05;
+        }
+        if (taxableIncomeNew <= 700000) newTax = 0;
+
+        const finalTax = Math.min(oldTax, newTax);
+        const savings = Math.abs(oldTax - newTax);
+        const recommendation = oldTax < newTax ? "Old Regime" : "New Regime";
+
+        const result = await db.query(
+            `INSERT INTO transactions (
+                user_id,
+                annualIncome,
+                investments_80C,
+                other_deductions,
+                rent_paid,
+                calculated_old_tax,
+                calculated_new_tax,
+                final_tax,
+                savings,
+                recommendation
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING *`,
+            [
+                user.id,
+                income,
+                inv80c,
+                other,
+                rent,
+                oldTax,
+                newTax,
+                finalTax,
+                savings,
+                recommendation
+            ]
+        );
+
+        res.json({
+            message: 'Tax analysis saved successfully',
+            transaction: result.rows[0]
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error saving tax analysis');
+    }
+};
+
 exports.getHistory = async (req, res) => {
     try {
         const user = req.user;
         const result = await db.query("SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC", [user.id]);
+        console.log(result.rows);
         res.json({
             history: result.rows
         });
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Error retrieving history");
+    }
+};
+
+exports.deleteTax = async (req, res) => {
+    try {
+        const user = req.user;
+        const { id } = req.params;
+
+        const result = await db.query("DELETE FROM transactions WHERE id=$1 AND user_id=$2 RETURNING *", [id, user.id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Transaction not found or not authorized' });
+        }
+
+        res.json({
+            message: 'Tax analysis deleted successfully',
+            deleted: result.rows[0]
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error deleting tax analysis');
+    }
+};
+
+exports.clearHistory = async (req, res) => {
+    try {
+        const user = req.user;
+
+        const result = await db.query("DELETE FROM transactions WHERE user_id=$1", [user.id]);
+
+        res.json({
+            message: 'All tax history cleared successfully',
+            deletedCount: result.rowCount
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error clearing tax history');
     }
 };

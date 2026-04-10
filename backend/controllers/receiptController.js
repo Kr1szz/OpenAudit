@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const Receipt = require('../models/receipt');
 const { parseReceipt } = require('../services/geminiServices.js');
 const { evaluateDocument } = require('../services/documentRuleEngine.js');
@@ -87,10 +88,13 @@ async function uploadReceipt(req, res) {
 
     const financialAggregate = aggregateFinancials(aggregateDocuments);
 
+    // Store relative path for serving via /uploads endpoint
+    const relativePath = `uploads/${req.file.filename}`;
+    
     const result = await Receipt.create({
       user_id: req.user.id,
       org_id: req.user.org_id,
-      file_path: filePath,
+      file_path: relativePath,
       file_type: req.file.mimetype,
       vendor,
       amount,
@@ -122,7 +126,37 @@ async function uploadReceipt(req, res) {
       error: err.message,
     });
   } finally {
-    fs.unlink(filePath, () => { });
+    // deliberately left intact to permit manual downloads and frontend previews
+  }
+}
+
+async function deleteReceipt(req, res) {
+  const receiptId = Number(req.params.id);
+  if (Number.isNaN(receiptId)) {
+    return res.status(400).json({ success: false, error: 'Invalid receipt id' });
+  }
+
+  try {
+    const existing = await Receipt.findById(receiptId, req.user.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Receipt not found' });
+    }
+
+    const filePath = existing.file_path;
+    if (filePath) {
+      const absolutePath = path.join(__dirname, '..', filePath);
+      fs.unlink(absolutePath, (unlinkErr) => {
+        if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+          console.error('Failed to delete file:', unlinkErr);
+        }
+      });
+    }
+
+    await Receipt.deleteById(receiptId, req.user.id);
+    return res.status(200).json({ success: true, message: 'Receipt deleted' });
+  } catch (err) {
+    console.error('Failed to delete receipt:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete receipt' });
   }
 }
 
@@ -138,4 +172,4 @@ async function getAllReceipts(req, res) {
   }
 }
 
-module.exports = { uploadReceipt, getAllReceipts };
+module.exports = { uploadReceipt, getAllReceipts, deleteReceipt };

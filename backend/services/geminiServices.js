@@ -222,14 +222,18 @@ async function parseReceipt(filePath) {
 {
   "vendor": "string",
   "amount": number,
+  //convert TO INR based on that hour's exchange rate. If the amount is missing or cannot be parsed,
+  //return 0. For example, if the receipt says $10 and the exchange rate at that time was 1 USD = 80 INR, 
+  //return 800.
   "currency": "INR",
-  "receipt_date": "DD-MM-YYYY",
+  "receipt_date": "YYYY-MM-DD", //regardless of how the date is formatted on the receipt, convert it to this standard format. If the date is missing or cannot be parsed, return an empty string.
   "timestamp": "HH:MM:SS",
   "category": "food/travel/office/medical/utilities/entertainment/other",
   "items": [
     { "name": "string", "quantity": number, "price": number }
   ],
   "confidence_score": number
+
 }
 
 Analyze the attached receipt image or PDF and return ONLY the JSON object.`;
