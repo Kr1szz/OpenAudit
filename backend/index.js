@@ -26,9 +26,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const authRoutes = require('./routes/authRoutes');
 const receiptRoutes = require('./routes/receiptRoutes');
 const taxRoutes = require('./routes/taxRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/', receiptRoutes);
 app.use('/api/tax', taxRoutes);
+app.use('/api/reports',reportRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to Open Audit Backend' });

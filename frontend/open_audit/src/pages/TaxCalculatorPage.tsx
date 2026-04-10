@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { HistoryEntry } from '../types/index.ts';
+import ShareReport from '../components/ShareReports';
 
 interface ReceiptRow {
   id: number;
@@ -104,9 +105,10 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         recommendation: result.recommendation,
       };
 
-      await axios.post('http://localhost:5000/api/tax/save', payload, {
+      const response = await axios.post('http://localhost:5000/api/tax/save', payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+      setResult((prev: any) => ({ ...prev, savedRecord: response.data.record }));
 
       onAddHistory({
         created_at: new Date().toISOString(),
@@ -199,10 +201,11 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
                     <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
                       Recalculate
                     </button>
-                    <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
-                      Send to Whatsapp
-                    </button>
+              
                   </div>
+                  {result.savedRecord?.id && (
+                    <ShareReport fileUrl={`http://localhost:5000/reports/${result.savedRecord.id}/download`} />
+                  )}
                 </div>
               ) : (
                 <div style={{ marginTop: '18px', color: '#6b7280', lineHeight: 1.7 }}>
@@ -224,7 +227,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
                 </div>
               )}
             </div>
-            
+
             {receiptSummary.count > 0 && (
               <div style={{ padding: '14px 20px', borderRadius: '12px', background: '#eef6ff', border: '1px solid #c8dbfa', fontSize: '0.88rem', color: '#0f1f4b', marginRight:'15px'}}>
                 <strong>{receiptSummary.count}</strong> receipt{receiptSummary.count > 1 ? 's' : ''} worth <strong>{receiptSummary.total.toLocaleString('en-IN')} Rs</strong> will be auto-included in deductions
