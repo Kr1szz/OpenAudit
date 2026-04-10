@@ -13,7 +13,7 @@ async function uploadReceipt(req, res) {
   try {
     const data = await parseReceipt(filePath);
     console.log(data);
-    const { vendor, amount, date, timestamp, category, items, confidence_score, currency } = data;
+    const { vendor, amount, receipt_date, timestamp, category, items, confidence_score, currency } = data;
     const result = await Receipt.create({
       user_id: req.user.id,
       org_id: req.user.org_id,
@@ -22,7 +22,7 @@ async function uploadReceipt(req, res) {
       vendor,
       amount,
       currency,
-      receipt_date: date,
+      receipt_date,
       timestamp,
       category,
       items,

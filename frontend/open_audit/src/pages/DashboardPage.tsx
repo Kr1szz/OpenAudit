@@ -5,7 +5,7 @@ interface Receipt {
   id: number;
   vendor: string;
   amount: number;
-  date: string;
+  receipt_date: string;
   flag: boolean;
   image_url: string;
   created_at: string;
@@ -21,6 +21,7 @@ function DashboardPage() {
         ? response.data
         : response.data?.receipts || [];
       setReceipts(receiptsData);
+      console.log('Fetched receipts:', receiptsData);
     } catch (error) {
       console.error('Error fetching receipts:', error);
       setReceipts([]);
@@ -67,7 +68,7 @@ function DashboardPage() {
               <tr key={receipt.id} className={receipt.flag ? 'bg-red-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{receipt.vendor}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rs.{Number(receipt.amount).toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.date}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.receipt_date?.split('T')[0]}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {receipt.flag ? 'Yes' : 'No'}
                 </td>
