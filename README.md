@@ -2,7 +2,7 @@
 
 An intelligent expense management platform that uses AI to extract data from receipts, detect fraud, calculate taxes, and provide actionable financial insights.
 
-## 🚀 Quick Start
+##  Quick Start
 
 ```bash
 # Clone the repository
@@ -66,14 +66,14 @@ The backend runs on `http://localhost:5000` and the frontend runs on `http://loc
 - Tailwind CSS v3.4.1 for styling
 - React Context API for state management
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Node.js v18 or higher
 - PostgreSQL database (Neon recommended for cloud)
 - Google Gemini API key (get it from [Google AI Studio](https://aistudio.google.com/))
 - npm or yarn
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Database Setup
 
@@ -133,7 +133,7 @@ npm run dev
 
 The frontend will run on **http://localhost:5173**
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 app/
@@ -191,7 +191,7 @@ app/
 └── README.md
 ```
 
-## 📡 API Endpoints
+##  API Endpoints
 
 ### Authentication
 | Method | Endpoint | Body | Description |
@@ -212,7 +212,7 @@ app/
 | POST | `/api/tax/calculate` | `{annualIncome, investments, otherDeductions, rentPaid}` | Calculate tax for both regimes (requires auth) |
 | GET | `/api/tax/history` | - | Get tax calculation history (requires auth) |
 
-## 🔐 Authentication
+##  Authentication
 
 All endpoints except `/api/auth/register` and `/api/auth/login` require JWT authentication:
 
@@ -220,7 +220,7 @@ All endpoints except `/api/auth/register` and `/api/auth/login` require JWT auth
 Authorization: Bearer <jwt_token>
 ```
 
-## 📸 Receipt Upload
+##  Receipt Upload
 
 Supported formats:
 - PDF (application/pdf)
@@ -236,7 +236,7 @@ The system extracts:
 - Item details
 - Confidence score
 
-## 🛡️ Fraud Detection
+##  Fraud Detection
 
 The system flags receipts for:
 - Unusually high amounts (> ₹10,000)
@@ -244,7 +244,7 @@ The system flags receipts for:
 - Duplicate transactions (same vendor + amount)
 - Invalid or suspicious data patterns
 
-## 💰 Tax Calculation
+##  Tax Calculation
 
 ### Old Regime
 - Basic deductions: 80C, HRA, standard deduction
@@ -256,7 +256,7 @@ The system flags receipts for:
 - Simplified without 80C/HRA deductions
 - Competitive tax rates
 
-## 🛠 Development
+##  Development
 
 ### Running Both Servers
 
@@ -279,7 +279,7 @@ npm run dev
 - **Database Pool**: `backend/config/db.js`
 - **Frontend State**: `frontend/src/contexts/AuthContext.tsx`
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
@@ -290,7 +290,7 @@ npm run dev
 | Frontend auth errors | Clear browser localStorage and .env JWT_SECRET |
 | CORS errors | Backend must be running on http://localhost:5000 |
 
-## 🚀 Deployment
+##  Deployment
 
 ### Backend (Node.js)
 - Deploy to Heroku, Railway, Render, or DigitalOcean
@@ -302,11 +302,11 @@ npm run dev
 - Deploy to Vercel, Netlify, or similar
 - Update API URL to production backend
 
-## 📊 Sample Data
+##  Sample Data
 
 The system includes mock data generation for testing without Gemini API key configured.
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -314,7 +314,7 @@ The system includes mock data generation for testing without Gemini API key conf
 4. Push to branch
 5. Create Pull Request
 
-## 📝 Environment Variables Reference
+##  Environment Variables Reference
 
 ```env
 # Backend
@@ -327,7 +327,7 @@ JWT_SECRET=your_secret_key_min_32_chars
 VITE_API_URL=http://localhost:5000
 ```
 
-## 📚 Resources
+##  Resources
 
 - [Google Gemini API Docs](https://ai.google.dev/)
 - [Express.js Documentation](https://expressjs.com/)
@@ -335,17 +335,17 @@ VITE_API_URL=http://localhost:5000
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [Tailwind CSS](https://tailwindcss.com/)
 
-## 📄 License
+##  License
 
 MIT License - Feel free to use this project for learning and commercial purposes.
 
-## 👥 Team
+## Team
 
-Built during the Open Audit Hackathon 2026
+Built during the FantomCode Hackathon 2026
 
 ---
 
-**Happy Auditing! 🎉**
+**Happy Auditing! **
 
 ```
 PORT=5000
