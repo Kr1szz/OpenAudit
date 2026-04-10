@@ -18,6 +18,7 @@ function Navbar() {
           <span>Welcome, {user?.name}</span>
           <Link to="/dashboard" className="hover:underline">Dashboard</Link>
           <Link to="/upload" className="hover:underline">Upload</Link>
+          <Link to="/tax" className="hover:underline">Tax Calculator</Link>
           {user?.role === 'admin' && (
             <Link to="/admin" className="hover:underline">Admin</Link>
           )}

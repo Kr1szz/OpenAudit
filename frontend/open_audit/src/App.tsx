@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import UploadPage from './pages/UploadPage';
+import TaxCalculatorPage from './pages/TaxCalculatorPage';
 import AdminPage from './pages/AdminPage';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -34,6 +35,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <UploadPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tax"
+          element={
+            <ProtectedRoute>
+              <TaxCalculatorPage />
             </ProtectedRoute>
           }
         />
