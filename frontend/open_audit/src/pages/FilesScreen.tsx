@@ -88,7 +88,11 @@ function FilesScreen() {
 
   const handleDownload = async (filePath: string, fileName: string) => {
     try {
-      const normalizedPath = filePath.replace(/\\/g, '/');
+      let normalizedPath = filePath.replace(/\\/g, '/');
+      // If the path doesn't start with uploads/, assume it needs it or just cleanly prepend the base URL
+      if (normalizedPath.startsWith('/')) {
+        normalizedPath = normalizedPath.substring(1);
+      }
       const url = `http://localhost:5000/${normalizedPath}`;
       console.log('Download URL:', url);
       const response = await fetch(url);
@@ -97,7 +101,17 @@ function FilesScreen() {
       const objUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objUrl;
-      link.download = fileName;
+      
+      // Ensure the filename has a proper extension
+      let finalName = fileName;
+      if (!finalName.includes('.')) {
+        // Fallback to extract extension from the original filePath or default to pdf
+        const extMatch = filePath.match(/\.([a-z0-9]+)$/i);
+        const ext = extMatch ? extMatch[1] : 'pdf';
+        finalName = `${fileName}.${ext}`;
+      }
+      
+      link.setAttribute('download', finalName);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -206,7 +220,12 @@ function FilesScreen() {
                       <td>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button onClick={() => handlePreview(r.file_path)} title="Preview file" className="table-btn table-btn-blue">Preview</button>
-                          <button onClick={() => handleDownload(r.file_path, `${r.vendor}_${r.id}.${(r.file_type || '').split('/')[1] || 'pdf'}`)} title="Download file" className="table-btn table-btn-green">Download</button>
+                          <button onClick={() => {
+                            const originalExt = r.file_path.split('.').pop();
+                            const fallbackExt = (r.file_type || '').split('/')[1] || 'pdf';
+                            const docExt = (originalExt && originalExt.length <= 4) ? originalExt : fallbackExt;
+                            handleDownload(r.file_path, `${r.vendor}_${r.id}.${docExt}`);
+                          }} title="Download file" className="table-btn table-btn-green">Download</button>
                           <button onClick={() => handleDelete(r.id)} title="Delete file" className="table-btn table-btn-red">Delete</button>
                         </div>
                       </td>

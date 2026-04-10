@@ -1,6 +1,19 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { GoogleGenAI } = require("@google/genai");
+const { Mistral } = require('@mistralai/mistralai');
+const client = new Mistral({ apiKey: process.env.MISTRAL_API_KEY });
+
+async function processReceipt(base64, mimeType) {
+  // Use proper data URI scheme so Mistral reads it correctly
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+  const response = await client.ocr.process({
+    model: "mistral-ocr-latest",
+    document: { type: "document_url", documentUrl: dataUrl }
+  });
+  // Combine all pages' markdown into one string
+  return response.pages.map(p => p.markdown).join('\n\n');
+}
 
 const MODEL_ENV_VAR = 'GEMINI_MODEL';
 const ALLOWED_CATEGORIES = new Set(['food', 'travel', 'office', 'medical', 'utilities', 'entertainment', 'other']);
@@ -217,7 +230,13 @@ async function parseReceipt(filePath) {
   const mimeType = getMimeType(absolutePath);
   const base64 = fileBuffer.toString('base64');
 
-  const prompt = `You are a receipt parser. Extract data from the attached receipt image or PDF and return ONLY a valid JSON object — no explanations, no markdown, no extra text.
+  // Step 1: Use Mistral OCR to extract Markdown from the document/image
+  console.log('Sending file to Mistral OCR...');
+  const mistralMarkdown = await processReceipt(base64, mimeType);
+  console.log('Mistral OCR successfully extracted text.');
+
+  const prompt = `You are an expert receipt parser. Extract data from the attached receipt image AND the provided OCR markdown text.
+The OCR text may have errors or missing parts if the receipt is handwritten. Use the attached raw image to correct any handwriting that the OCR engine missed.
 
 CRITICAL RULES:
 1. CURRENCY CONVERSION: If the receipt amount is in any currency other than INR (e.g. USD, EUR, GBP, AED, etc.), you MUST convert it to Indian Rupees (INR) using approximate current exchange rates. For example: $10 USD ≈ 840 INR, €10 EUR ≈ 920 INR, £10 GBP ≈ 1060 INR. Always return the converted INR value in the "amount" field.
@@ -239,7 +258,10 @@ Return this exact JSON shape:
   "confidence_score": number
 }
 
-Analyze the attached receipt and return ONLY the JSON object.`;
+Analyze the following Mistral OCR data AND the attached image, then return ONLY the JSON object:
+---
+${mistralMarkdown}
+---`;
 
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
@@ -247,7 +269,7 @@ Analyze the attached receipt and return ONLY the JSON object.`;
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite",
+    model: "gemini-2.5-flash", // We use flash instead of flash-lite for better multimodal handwriting reasoning
     contents: [
       {
         role: "user",
@@ -265,7 +287,9 @@ Analyze the attached receipt and return ONLY the JSON object.`;
   });
 
   const responseText = response.text;
+  console.log('Raw response from Gemini:', JSON.stringify(response, null, 2));
   const parsed = parseJsonSafely(responseText);
+  
   return assertReceiptShape(parsed);
 }
 

@@ -68,10 +68,20 @@ function HomeScreen({ onNav }: { onNav: (s: Screen) => void }) {
   };
 
   const taxDeductible = useMemo(() => {
-    const eligibleTypes = new Set(["Investment Proof", "Medical Bills", "Rent Receipt", "Form 16"]);
     return receipts
-      .filter(r => eligibleTypes.has(canonicalizeCategory(String(r.category || ''))))
-      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+      .filter(r => !r.is_flagged) // Only valid, unflagged receipts count for tax deductions
+      .reduce((sum, r) => {
+        const cat = String(r.category || '').toLowerCase();
+        // Match the same logic used in the backend tax calculation for deductibles
+        if (
+          cat.includes('medical') || cat.includes('health') || cat.includes('education') ||
+          cat.includes('investment') || cat.includes('insurance') || cat.includes('pf') || cat.includes('80c') ||
+          cat.includes('rent') || cat.includes('hra') || cat.includes('form 16') || cat.includes('form16')
+        ) {
+          return sum + (Number(r.amount) || 0);
+        }
+        return sum;
+      }, 0);
   }, [receipts]);
 
   const flagsCount = useMemo(() => receipts.filter((r) => Boolean(r.is_flagged)).length, [receipts]);
