@@ -1,7 +1,37 @@
 const fs = require('fs');
-const db = require('../config/db');
 const Receipt = require('../models/receipt');
 const { parseReceipt } = require('../services/geminiServices.js');
+const { evaluateDocument } = require('../services/documentRuleEngine.js');
+const { detectAnomalies } = require('../services/anamolyEngine.js');
+const { aggregateFinancials } = require('../services/aggregationEngine.js');
+
+function mapReceiptRowToEngineDocument(row) {
+  let items = [];
+  try {
+    items = Array.isArray(row.items) ? row.items : JSON.parse(row.items || '[]');
+  } catch {
+    items = [];
+  }
+
+  return {
+    vendor: row.vendor,
+    amount: row.amount,
+    document_date: row.receipt_date,
+    category: row.category,
+    document_type: row.document_type || '',
+    items,
+    confidence_score: row.confidence_score,
+    data: {
+      amount: row.amount,
+      category: row.category,
+      document_date: row.receipt_date,
+      currency: row.currency,
+      confidence_score: row.confidence_score,
+      items,
+      vendor: row.vendor,
+    },
+  };
+}
 
 async function uploadReceipt(req, res) {
   const filePath = req.file && req.file.path;
@@ -12,8 +42,51 @@ async function uploadReceipt(req, res) {
 
   try {
     const data = await parseReceipt(filePath);
-    console.log(data);
     const { vendor, amount, receipt_date, timestamp, category, items, confidence_score, currency } = data;
+
+    const parsedDocument = {
+      vendor,
+      amount,
+      document_date: receipt_date,
+      category,
+      document_type: '',
+      items,
+      confidence_score,
+    };
+
+    const existingReceipts = await Receipt.findAll(req.user?.id || null);
+    const previousDocuments = existingReceipts.map(mapReceiptRowToEngineDocument);
+    const context = {
+      historicalAmounts: previousDocuments.map((doc) => doc.amount),
+      previousDocuments,
+      knownVendors: previousDocuments.map((doc) => doc.vendor),
+    };
+
+    const documentAnalysis = evaluateDocument(parsedDocument);
+    const anomalyAnalysis = detectAnomalies(parsedDocument, context);
+
+    const currentEngineDocument = {
+      classification: documentAnalysis.classification,
+      data: {
+        ...parsedDocument,
+        amount,
+        category,
+        document_date: receipt_date,
+        currency,
+        confidence_score,
+      },
+      anomaly: anomalyAnalysis,
+    };
+
+    const aggregateDocuments = previousDocuments.map((doc) => ({
+      classification: 'unknown',
+      data: doc.data,
+      anomaly: { risk_score: 0 },
+    }));
+    aggregateDocuments.push(currentEngineDocument);
+
+    const financialAggregate = aggregateFinancials(aggregateDocuments);
+
     const result = await Receipt.create({
       user_id: req.user.id,
       org_id: req.user.org_id,
@@ -27,12 +100,20 @@ async function uploadReceipt(req, res) {
       category,
       items,
       confidence_score,
-      is_flagged: false,
-      anomaly_reasons: [],
+      is_flagged: anomalyAnalysis.recommended_action !== 'accept',
+      anomaly_reasons: anomalyAnalysis.anomalies,
       source: 'web',
-      is_shared: false
+      is_shared: false,
     });
-    return res.status(200).json({ success: true, data });
+
+    return res.status(200).json({
+      success: true,
+      receipt: result,
+      extracted_data: data,
+      document_analysis: documentAnalysis,
+      anomaly_analysis: anomalyAnalysis,
+      financial_aggregate: financialAggregate,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({

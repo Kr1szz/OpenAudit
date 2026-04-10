@@ -6,7 +6,7 @@ interface Receipt {
   vendor: string;
   amount: number;
   receipt_date: string;
-  flag: boolean;
+  is_flagged: boolean;
   image_url: string;
   created_at: string;
 }
@@ -44,12 +44,12 @@ function DashboardPage() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">My Receipts Dashboard</h1>
       <div className="mb-4 grid grid-cols-2 gap-4">
-        <div className="bg-green-100 p-4 rounded">
-          <h2 className="text-lg font-semibold">Total Expenses</h2>
+        <div className="bg-green-100 p-4 rounded text-black">
+          <h2 className="text-lg font-semibold text-black">Total Expenses</h2>
           <p className="text-2xl">Rs.{totalExpense.toFixed(2)}</p>
         </div>
-        <div className="bg-yellow-100 p-4 rounded">
-          <h2 className="text-lg font-semibold">Flagged Receipts</h2>
+        <div className="bg-yellow-100 p-4 rounded text-black">
+          <h2 className="text-lg font-semibold text-black">Flagged Receipts</h2>
           <p className="text-2xl">{flaggedCount}</p>
         </div>
       </div>
@@ -57,20 +57,20 @@ function DashboardPage() {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flagged</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Flagged</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {receipts.map((receipt) => (
-              <tr key={receipt.id} className={receipt.flag ? 'bg-red-50' : ''}>
+              <tr key={receipt.id} className={receipt.is_flagged ? 'bg-red-200' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{receipt.vendor}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rs.{Number(receipt.amount).toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">Rs.{Number(receipt.amount).toFixed(2)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.receipt_date?.split('T')[0]}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {receipt.flag ? 'Yes' : 'No'}
+                  {receipt.is_flagged ? 'Yes' : 'No'}
                 </td>
               </tr>
             ))}
