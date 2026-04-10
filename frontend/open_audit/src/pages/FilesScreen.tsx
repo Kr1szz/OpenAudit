@@ -141,59 +141,85 @@ function FilesScreen() {
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: '1400px', paddingTop: '10px' }}>
-      <div className="history-wrapper" style={{ overflow: 'hidden', maxHeight: 'calc(100vh - 180px)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
-            <div className="page-title" style={{ margin: 0, fontSize: '1.2rem' }}>Files</div>
+    <div className="screen">
+      <div className="history-wrapper" style={{ overflow: 'hidden', maxHeight: 'calc(100vh - 260px)' }}>
+          <div className="files-header">
+            <div className="page-title" style={{ margin: 0, fontSize: '1.7rem' }}>Files</div>
             <button
               onClick={() => setShowUploadModal(true)}
-              style={{
-                padding: '8px 16px',
-                background: '#0d6efd',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.9rem'
-              }}
+              className="table-btn table-btn-blue"
+              style={{ fontSize: '0.82rem', padding: '6px 12px' }}
             >
               Upload Document
             </button>
           </div>
 
           {receipts.length > 0 ? (
-            <div style={{ width: '100%', height: '100%', overflowY: 'auto', minHeight: 0 }}>
-              <table className="history-table" style={{ border: 'none', borderRadius: '15px', textAlign: 'left', width: '100%' }}>
+            <div className="history-table-wrapper" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+              <table className="history-table">
                 <thead>
                   <tr>
-                    <th style={{ background: '#f8fafc', textAlign: 'left', padding: '16px 20px' }}>VENDOR</th>
-                    <th style={{ background: '#f8fafc', textAlign: 'left', padding: '16px 20px' }}>AMOUNT</th>
-                    <th style={{ background: '#f8fafc', textAlign: 'left', padding: '16px 20px' }}>CATEGORY</th>
-                    <th style={{ background: '#f8fafc', textAlign: 'left', padding: '16px 20px' }}>FLAGS</th>
-                    <th style={{ background: '#f8fafc', textAlign: 'left', padding: '16px 20px' }}>ACTIONS</th>
+                    <th>Vendor</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Flags</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {receipts.map(r => (
                     <tr key={r.id}>
-                      <td className="bold" style={{ textAlign: 'left', padding: '16px 20px' }}>{r.vendor}</td>
-                      <td className="mono" style={{ textAlign: 'left', padding: '16px 20px' }}>{r.amount} {r.currency}</td>
-                      <td style={{ textAlign: 'left', padding: '16px 20px' }}>{r.category}</td>
-                      <td style={{ textAlign: 'left', padding: '16px 20px' }}>
+                      <td className="bold">{r.vendor}</td>
+                      <td className="mono">{r.amount} {r.currency}</td>
+                      <td>{r.category || 'Other'}</td>
+                      <td>
                         {r.is_flagged ? (
-                          <span style={{ color: '#e74c3c', fontWeight: 600 }}>
-                            Flagged: {r.anomaly_reasons?.join(', ') || 'Review needed'}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {r.anomaly_reasons && r.anomaly_reasons.length > 0 ? (
+                              r.anomaly_reasons.map((reasonObj: any, idx: number) => {
+                                let typeStr = '';
+                                let severityStr = 'low';
+                                
+                                if (typeof reasonObj === 'object' && reasonObj !== null) {
+                                  typeStr = reasonObj.type || reasonObj.message || 'Flagged';
+                                  severityStr = reasonObj.severity ? String(reasonObj.severity).toLowerCase() : 'low';
+                                } else {
+                                  typeStr = String(reasonObj);
+                                  severityStr = typeStr.toLowerCase().includes('high') ? 'high' : typeStr.toLowerCase().includes('medium') ? 'medium' : 'low';
+                                }
+
+                                // Format the type (e.g., 'missing_amount' -> 'Missing Amount')
+                                typeStr = typeStr.replace(/_/g, ' ')
+                                  .split(' - ')[0] // Extract just the type portion
+                                  .split(':')[1]?.split(",")[0] || typeStr; // Handle "Type: XYZ" format safely
+                                typeStr = typeStr.replace(/["'{}]/g, '').trim(); // Remove quotes, braces, and extra spaces
+                                typeStr = typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
+                                
+                                const color = (severityStr === 'high' || severityStr === 'critical') ? '#dc2626' 
+                                            : severityStr === 'medium' ? '#f97316' 
+                                            : '#ea580c';
+
+                                return (
+                                  <div key={idx} style={{ fontSize: '0.82rem', color, fontWeight: 600 }}>
+                                    <span className="capitalize">{typeStr.toString()}</span> 
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div style={{ fontSize: '0.82rem', color: '#e74c3c', fontWeight: 500 }}>
+                                • Review needed
+                              </div>
+                            )}
+                          </div>
                         ) : (
-                          <span style={{ color: '#1a9e5c' }}>Clean</span>
+                          <div style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 500 }}>✓ Clean</div>
                         )}
                       </td>
-                      <td style={{ textAlign: 'left', padding: '16px 20px' }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <button onClick={() => handlePreview(r.file_path)} title="Preview file" style={{ padding: '6px 12px', background: '#0d6efd', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', transition: 'all 0.2s' }}>Preview</button>
-                          <button onClick={() => handleDownload(r.file_path, `${r.vendor}_${r.id}.${(r.file_type || '').split('/')[1] || 'pdf'}`)} title="Download file" style={{ padding: '6px 12px', background: '#1a9e5c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', transition: 'all 0.2s' }}>Download</button>
-                          <button onClick={() => handleDelete(r.id)} title="Delete file" style={{ padding: '6px 12px', background: '#e53935', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', transition: 'all 0.2s' }}>Delete</button>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button onClick={() => handlePreview(r.file_path)} title="Preview file" className="table-btn table-btn-blue">Preview</button>
+                          <button onClick={() => handleDownload(r.file_path, `${r.vendor}_${r.id}.${(r.file_type || '').split('/')[1] || 'pdf'}`)} title="Download file" className="table-btn table-btn-green">Download</button>
+                          <button onClick={() => handleDelete(r.id)} title="Delete file" className="table-btn table-btn-red">Delete</button>
                         </div>
                       </td>
                     </tr>

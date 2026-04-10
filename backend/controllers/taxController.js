@@ -1,18 +1,38 @@
 const db = require('../config/db');
 exports.calculateTax = async (req, res) => {
     console.log(req.body);
-    const { annualIncome = 0, investments = 0, otherDeductions = 0, rentPaid = 0 } = req.body;
+    const { annualIncome = 0, investments = 0, otherDeductions = 0, rentPaid = 0, includeReceipts = false } = req.body;
     const safeParse = (val) => {
         const parsed = parseFloat(val);
         return isNaN(parsed) ? 0 : parsed;
     };
     // Convert strings to numbers (just in case)
     const income = safeParse(annualIncome);
-    const inv80c = safeParse(investments); // Max limit is usually 1.5L
-    const other = safeParse(otherDeductions);
+    let inv80c = safeParse(investments); // Max limit is usually 1.5L
+    let other = safeParse(otherDeductions);
     const rent = safeParse(rentPaid);
+    const userId = req.user.id;
 
     try {
+        if (includeReceipts) {
+            // Aggregate valid receipts for deductions
+            const receiptsResp = await db.query(
+                "SELECT category, sum(amount) as total FROM receipts WHERE user_id = $1 AND is_flagged = false GROUP BY category",
+                [userId]
+            );
+            
+            receiptsResp.rows.forEach(row => {
+                const cat = (row.category || '').toLowerCase();
+                const amount = parseFloat(row.total) || 0;
+                
+                if (cat.includes('medical') || cat.includes('health') || cat.includes('education')) {
+                    other += amount;
+                } else if (cat.includes('investment') || cat.includes('insurance') || cat.includes('pf') || cat.includes('80c')) {
+                    inv80c += amount;
+                }
+            });
+        }
+
         // --- 2. CALCULATE OLD REGIME ---
 
         // Assumption: Basic Salary is 50% of Gross Income

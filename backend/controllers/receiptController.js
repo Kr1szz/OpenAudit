@@ -34,6 +34,24 @@ function mapReceiptRowToEngineDocument(row) {
   };
 }
 
+function canonicalizeCategory(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return null;
+
+  if (raw === 'rent receipt' || raw.includes('rent') || raw.includes('hra')) return 'Rent Receipt';
+  if (raw === 'form 16' || raw === 'form16' || raw.includes('form 16') || raw.includes('form16')) return 'Form 16';
+  if (raw === 'investment proof' || raw.includes('invest') || raw.includes('80c') || raw.includes('proof')) return 'Investment Proof';
+  if (raw === 'medical bills' || raw.includes('medical') || raw.includes('health') || raw.includes('hospital')) return 'Medical Bills';
+  if (raw === 'bank statement' || raw.includes('bank') || raw.includes('statement')) return 'Bank Statement';
+  if (raw === 'other') return 'Other';
+
+  return null;
+}
+
+function normalizeCategory(parsedCategory, selectedCategory) {
+  return canonicalizeCategory(selectedCategory) || canonicalizeCategory(parsedCategory) || 'Other';
+}
+
 async function uploadReceipt(req, res) {
   const filePath = req.file && req.file.path;
 
@@ -44,12 +62,13 @@ async function uploadReceipt(req, res) {
   try {
     const data = await parseReceipt(filePath);
     const { vendor, amount, receipt_date, timestamp, category, items, confidence_score, currency } = data;
+    const normalizedCategory = normalizeCategory(category, req.body?.category);
 
     const parsedDocument = {
       vendor,
       amount,
       document_date: receipt_date,
-      category,
+      category: normalizedCategory,
       document_type: '',
       items,
       confidence_score,
@@ -71,7 +90,7 @@ async function uploadReceipt(req, res) {
       data: {
         ...parsedDocument,
         amount,
-        category,
+        category: normalizedCategory,
         document_date: receipt_date,
         currency,
         confidence_score,
@@ -101,7 +120,7 @@ async function uploadReceipt(req, res) {
       currency,
       receipt_date,
       timestamp,
-      category,
+      category: normalizedCategory,
       items,
       confidence_score,
       is_flagged: anomalyAnalysis.recommended_action !== 'accept',

@@ -60,7 +60,7 @@ function RegisterScreen({ onNav }: { onNav: (s: Screen) => void }) {
           <div className="field-group">
             <span className="field-label">Role</span>
             <select className="select" value={role} onChange={e => setRole(e.target.value as Role)}>
-              <option value="User">User / Admin</option>
+              <option value="User">User</option>
               <option value="Admin">Admin</option>
             </select>
           </div>

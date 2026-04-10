@@ -60,48 +60,27 @@ function HistoryScreen() {
 
   return (
     <div className="screen">
-      <div className="mesh-bg" />
       <div className="history-wrapper">
         
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0px' }}>
+        <div className="history-header">
           <button
             onClick={fetchHistory}
             disabled={loading}
-            style={{
-              padding: '6px 12px',
-              background: '#0d6efd',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              marginLeft: '10px'
-            }}
+            className="table-btn table-btn-blue"
           >
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
-          <div className="page-title">History</div>
+          <div className="page-title" style={{ fontSize: '1.7rem', marginBottom: 0 }}>History</div>
           {history.length > 0 ? (
             <button
               onClick={clearAllHistory}
-              style={{
-                padding: '6px 12px',
-                background: '#e74c3c',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                marginRight: '10px'
-              }}
+              className="table-btn table-btn-red"
             >
               Clear All
             </button>
           ) : (
-            <div />
+            <div className="history-header-spacer" />
           )}
         </div>
 
@@ -121,13 +100,13 @@ function HistoryScreen() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '60px', color: '#6b7280' }}>
+                  <td colSpan={7} style={{ padding: '30px', color: '#6b7280', textAlign: 'center' }}>
                     Loading history...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '60px', color: '#e74c3c' }}>
+                  <td colSpan={7} style={{ padding: '30px', color: '#e74c3c', textAlign: 'center' }}>
                     {error}
                   </td>
                 </tr>
@@ -145,14 +124,8 @@ function HistoryScreen() {
                       <td>
                         <button
                           onClick={() => deleteEntry(entry.id)}
-                          style={{
-                            background: '#e74c3c',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
+                          className="table-btn table-btn-red"
+                          style={{ padding: '4px 8px' }}
                         >
                           Remove
                         </button>
@@ -162,7 +135,7 @@ function HistoryScreen() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} style={{ padding: '60px', color: '#6b7280' }}>
+                  <td colSpan={7} style={{ padding: '30px', color: '#6b7280', textAlign: 'center' }}>
                     No history recorded yet. Run a tax analysis to see your past calculations here.
                   </td>
                 </tr>

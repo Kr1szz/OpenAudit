@@ -17,7 +17,9 @@ function Navbar({ screen, onNav }: { screen: Screen; onNav: (s: Screen) => void 
         initials = parts[0][0].toUpperCase();
       }
     }
-  } catch(e) {}
+  } catch {
+    // Ignore malformed token payloads and keep default initials.
+  }
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
@@ -42,7 +44,7 @@ function Navbar({ screen, onNav }: { screen: Screen; onNav: (s: Screen) => void 
             </button>
           ))}
           
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div className="navbar-menu-anchor">
             <button 
               className="navbar-user" 
               onClick={() => setMenuOpen(!menuOpen)}
@@ -51,12 +53,7 @@ function Navbar({ screen, onNav }: { screen: Screen; onNav: (s: Screen) => void 
             </button>
             
             {menuOpen && (
-              <div style={{
-                position: 'absolute', top: '100%', right: '0', marginTop: '12px',
-                background: 'white', borderRadius: '12px', 
-                boxShadow: '0 8px 24px rgba(0,0,0,0.15)', border: '1px solid var(--border)',
-                padding: '6px 0', minWidth: '140px', zIndex: 1000
-              }}>
+              <div className="navbar-menu-dropdown">
                 <button 
                   onClick={handleSignOut} 
                   style={{ display: 'block', width: '100%', padding: '10px 20px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', color: '#111827', fontSize: '0.88rem', fontWeight: 600, transition: 'background 0.2s' }}

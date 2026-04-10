@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import type { HistoryEntry } from '../types/index.ts';
 
+
 function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) => void }) {
   const [basic, setBasic] = useState({ income: "", investments80c: "", rent: "" });
   const [advanced, setAdvanced] = useState({ medical: "", nps: "", eduLoan: "" });
@@ -10,6 +11,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [receipts, setReceipts] = useState<Receipts[]>([]);
 
   const handleCompute = async () => {
     if (!basic.income || Number(basic.income) <= 0) {
@@ -77,7 +79,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
 
       onAddHistory({
         created_at: new Date().toISOString(),
-        annualIncome: payload.annualIncome,
+        annualincome: payload.annualIncome,
         calculated_old_tax: payload.oldRegimeTax,
         calculated_new_tax: payload.newRegimeTax,
         recommendation: payload.recommendation,
@@ -131,7 +133,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
             </div>
 
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <button className="run-pill" onClick={handleCompute} disabled={loading} style={{ flex: '1 1 220px' }}>
+              <button className="run-pill" onClick={handleCompute} disabled={loading} style={{ flex: '1 1 220px', marginRight:'15px', background: '#1d6dff', color: '#fff', border: '1px solid #1d6dff' }}>
                 {loading ? 'Analyzing...' : 'Run Tax Analysis'}
               </button>
             </div>
@@ -166,6 +168,9 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
                     <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
                       Recalculate
                     </button>
+                    <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
+                      Send to Whatsapp
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -175,7 +180,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
               )}
             </div>
 
-            <div style={{ minHeight: '68px', padding: '20px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)', border: '1px solid #e2e8f0' }}>
+            <div style={{ minHeight: '68px', padding: '20px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)', border: '1px solid #e2e8f0', marginRight:'15px'}}>
               {error ? (
                 <div style={{ color: '#e74c3c', textAlign: 'center', fontWeight: 600 }}>{error}</div>
               ) : success ? (
