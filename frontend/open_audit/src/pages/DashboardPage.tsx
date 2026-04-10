@@ -17,9 +17,13 @@ function DashboardPage() {
   const fetchReceipts = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/receipts');
-      setReceipts(response.data);
+      const receiptsData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.receipts || [];
+      setReceipts(receiptsData);
     } catch (error) {
       console.error('Error fetching receipts:', error);
+      setReceipts([]);
     }
   };
 
@@ -28,7 +32,7 @@ function DashboardPage() {
   }, []);
 
   const totalExpense = useMemo(() => {
-    return receipts.reduce((sum, receipt) => sum + receipt.amount, 0);
+    return receipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
   }, [receipts]);
 
   const flaggedCount = useMemo(() => {
@@ -41,7 +45,7 @@ function DashboardPage() {
       <div className="mb-4 grid grid-cols-2 gap-4">
         <div className="bg-green-100 p-4 rounded">
           <h2 className="text-lg font-semibold">Total Expenses</h2>
-          <p className="text-2xl">${totalExpense.toFixed(2)}</p>
+          <p className="text-2xl">Rs.{totalExpense.toFixed(2)}</p>
         </div>
         <div className="bg-yellow-100 p-4 rounded">
           <h2 className="text-lg font-semibold">Flagged Receipts</h2>
@@ -62,7 +66,7 @@ function DashboardPage() {
             {receipts.map((receipt) => (
               <tr key={receipt.id} className={receipt.flag ? 'bg-red-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{receipt.vendor}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${receipt.amount.toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rs.{Number(receipt.amount).toFixed(2)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.date}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {receipt.flag ? 'Yes' : 'No'}

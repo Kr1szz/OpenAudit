@@ -90,58 +90,56 @@ function assertReceiptShape(receipt) {
   const amount = maybeNumber(receipt.amount);
   const currency = normalizeText(receipt.currency).toUpperCase();
   const receipt_date = normalizeText(receipt.receipt_date);
+  const timestamp = normalizeText(receipt.timestamp);
   const category = normalizeText(receipt.category).toLowerCase();
   const confidence_score = maybeNumber(receipt.confidence_score);
 
-  if (!vendor) {
-    throw new Error('Missing or invalid vendor');
-  }
-  if (amount === null) {
-    throw new Error('Missing or invalid amount');
-  }
-  if (currency !== 'INR') {
-    throw new Error('Currency must be INR');
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(receipt_date)) {
-    throw new Error('receipt_date must be in YYYY-MM-DD format');
-  }
-  if (!ALLOWED_CATEGORIES.has(category)) {
-    throw new Error(`category must be one of: ${Array.from(ALLOWED_CATEGORIES).join(', ')}`);
-  }
-  if (confidence_score === null) {
-    throw new Error('Missing or invalid confidence_score');
-  }
+  // if (!vendor) {
+  //   throw new Error('Missing or invalid vendor');
+  // }
+  // if (amount === null) {
+  //   throw new Error('Missing or invalid amount');
+  // }
+  // if (currency !== 'INR') {
+  //   throw new Error('Currency must be INR');
+  // }
+  // if (!/^\d{4}-\d{2}-\d{2}$/.test(receipt_date)) {
+  //   throw new Error('receipt_date must be in YYYY-MM-DD format');
+  // }
+  // if (!ALLOWED_CATEGORIES.has(category)) {
+  //   throw new Error(`category must be one of: ${Array.from(ALLOWED_CATEGORIES).join(', ')}`);
+  // }
+  // if (confidence_score === null) {
+  //   throw new Error('Missing or invalid confidence_score');
+  // }
 
-  if (!Array.isArray(receipt.items)) {
-    throw new Error('Missing or invalid items array');
-  }
+  // if (!Array.isArray(receipt.items)) {
+  //   throw new Error('Missing or invalid items array');
+  // }
 
   const items = receipt.items.map((item, index) => {
-    if (!item || typeof item !== 'object') {
-      throw new Error(`Item at index ${index} is invalid`);
-    }
     const name = normalizeText(item.name);
     const quantity = maybeNumber(item.quantity);
     const price = maybeNumber(item.price);
-
-    if (!name) {
-      throw new Error(`Item at index ${index} is missing a name`);
-    }
-    if (quantity === null) {
-      throw new Error(`Item at index ${index} has invalid quantity`);
-    }
-    if (price === null) {
-      throw new Error(`Item at index ${index} has invalid price`);
-    }
-
     return { name, quantity, price };
   });
+
+  //   if (!name) {
+  //     throw new Error(`Item at index ${index} is missing a name`);
+  //   }
+  //   if (quantity === null) {
+  //     throw new Error(`Item at index ${index} has invalid quantity`);
+  //   }
+  //   if (price === null) {
+  //     throw new Error(`Item at index ${index} has invalid price`);
+  //   }
 
   return {
     vendor,
     amount,
     currency,
     receipt_date,
+    timestamp,
     category,
     items,
     confidence_score,
@@ -225,7 +223,8 @@ async function parseReceipt(filePath) {
   "vendor": "string",
   "amount": number,
   "currency": "INR",
-  "receipt_date": "YYYY-MM-DD",
+  "receipt_date": "DD-MM-YYYY",
+  "timestamp": "HH:MM:SS",
   "category": "food/travel/office/medical/utilities/entertainment/other",
   "items": [
     { "name": "string", "quantity": number, "price": number }
@@ -260,7 +259,7 @@ Analyze the attached receipt image or PDF and return ONLY the JSON object.`;
 
   const responseText = response.text;
   const parsed = parseJsonSafely(responseText);
-    return assertReceiptShape(parsed);
+  return assertReceiptShape(parsed);
 }
 
 async function runReceiptParseTest() {

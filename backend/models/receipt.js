@@ -1,13 +1,13 @@
 const pool = require('../config/db');
 
 class Receipt {
-    static async create({ vendor, amount, date, flag, image_url, user_id }) {
+    static async create({ user_id, org_id, file_path, file_type, vendor, amount, currency, receipt_date, timestamp, category, items, confidence_score, is_flagged, anomaly_reasons, source = 'web', is_shared = false }) {
         const query = `
-            INSERT INTO receipts (vendor, amount, date, flag, image_url, user_id)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO receipts (user_id, org_id, file_path, file_type, vendor, amount, currency, receipt_date, transaction_time, category, items, confidence_score, is_flagged, anomaly_reasons, source, is_shared)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING *
         `;
-        const values = [vendor, amount, date, flag, image_url, user_id];
+        const values = [user_id, org_id || null, file_path, file_type || 'image/jpeg', vendor, amount, currency, receipt_date, timestamp || null, category, JSON.stringify(items || []), confidence_score, is_flagged, anomaly_reasons || [], source, is_shared];
         const result = await pool.query(query, values);
         return result.rows[0];
     }

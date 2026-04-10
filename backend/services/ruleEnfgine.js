@@ -1,23 +1,22 @@
 const Receipt = require('../models/receipt');
 
-function detectFraud({ vendor, amount, date }) {
-    let flag = false;
+function detectFraud({ vendor, amount, receipt_date }) {
+    let is_flagged = false;
+    let anomaly_reasons = [];
 
     // Rule 1: amount > 10000
     if (amount > 10000) {
-        flag = true;
+        is_flagged = true;
+        anomaly_reasons.push("High amount exceeding 10000 threshold");
     }
-
-    // Rule 2: duplicate receipt (same vendor and amount)
-    // Note: This is async, but for simplicity, we'll check after extraction
-    // In controller, we'll call this separately
 
     // Rule 3: missing fields
-    if (!vendor || !date) {
-        flag = true;
+    if (!vendor || !receipt_date) {
+        is_flagged = true;
+        anomaly_reasons.push("Missing vendor or receipt date");
     }
 
-    return flag;
+    return { is_flagged, anomaly_reasons };
 }
 
 async function checkDuplicate(vendor, amount) {
