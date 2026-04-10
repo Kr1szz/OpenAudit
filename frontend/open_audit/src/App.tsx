@@ -72,13 +72,14 @@ import { AuthProvider } from './contexts/AuthContext.tsx';
 //     </Router>
 //   );
 // }
+import { globalStyles } from './styles/global.ts';
 function App() {
   const [screen, setScreen] = useState<Screen>(() => {
     return localStorage.getItem('token') ? "home" : "splash";
   });
- 
-  const isAuth = !["splash","login","register"].includes(screen);
- 
+
+  const isAuth = !["splash", "login", "register"].includes(screen);
+
   return (
     <AuthProvider>
       <div className="screen">
@@ -88,7 +89,7 @@ function App() {
         {screen === "login" && <LoginScreen onNav={setScreen} />}
         {screen === "register" && <RegisterScreen onNav={setScreen} />}
         {screen === "home" && <HomeScreen onNav={setScreen} />}
-        {screen === "calculator" && <CalculatorScreen onAddHistory={() => {}} />}
+        {screen === "calculator" && <CalculatorScreen onAddHistory={() => { }} />}
         {screen === "files" && <FilesScreen />}
         {screen === "history" && <HistoryScreen />}
       </div>
