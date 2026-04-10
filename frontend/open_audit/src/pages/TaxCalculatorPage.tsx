@@ -45,7 +45,7 @@ function TaxCalculatorPage() {
         rentPaid: Number(formData.rentPaid) || 0,
       };
 
-      const response = await axios.post('http://localhost:5000/api/tax/calculate', payload);
+      const response = await axios.post('http://localhost:3000/api/tax/calculate', payload);
       setResult(response.data);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to calculate taxes. Please try again.');
