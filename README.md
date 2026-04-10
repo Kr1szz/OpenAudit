@@ -2,6 +2,26 @@
 
 An intelligent expense management platform that uses AI to extract data from receipts, detect fraud, calculate taxes, and provide actionable financial insights.
 
+## 🚀 Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/<your-org>/OpenAudit.git
+cd OpenAudit
+
+# Install backend dependencies and start backend server
+cd backend
+npm install
+npm run dev
+
+# In a new terminal, install frontend dependencies and start frontend server
+cd ../frontend/open_audit
+npm install
+npm run dev
+```
+
+The backend runs on `http://localhost:5000` and the frontend runs on `http://localhost:5173`.
+
 ## ✨ Features
 
 ### Receipt Management
@@ -93,6 +113,9 @@ EOF
 # Start the development server
 npm run dev
 ```
+
+> Create a `.env` file in `backend/` with the values above before starting the server.
+> `DATABASE_URL` should point to your PostgreSQL instance, `GEMINI_API_KEY` must be valid, and `JWT_SECRET` is used for auth token signing.
 
 The backend will run on **http://localhost:5000**
 
