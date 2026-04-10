@@ -1,18 +1,32 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
+const authRoutes = require('./routes/authRoutes');
+const receiptRoutes = require('./routes/receiptRoutes');
+app.use('/api/auth', authRoutes);
+app.use('/api', receiptRoutes);
+
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to the backend' });
+    res.json({ message: 'Welcome to Open Audit Backend' });
 });
 
 app.get('/api/health', (req, res) => {
