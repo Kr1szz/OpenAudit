@@ -1,21 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-
+import type { Receipt } from '../types/index.ts';
 const DOC_TYPES = ["Rent Receipt", "Form 16", "Investment Proof", "Medical Bills", "Bank Statement"];
 
-interface Receipt {
-  id: number;
-  vendor: string;
-  amount: number;
-  currency: string;
-  receipt_date: string;
-  category: string;
-  file_path: string;
-  file_type: string;
-  created_at: string;
-  is_flagged: boolean;
-  anomaly_reasons: string[];
-}
+
 
 function FilesScreen() {
   const [activeType, setActiveType] = useState("Rent Receipt");

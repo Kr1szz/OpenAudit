@@ -217,26 +217,29 @@ async function parseReceipt(filePath) {
   const mimeType = getMimeType(absolutePath);
   const base64 = fileBuffer.toString('base64');
 
-  const prompt = `You are a receipts parser. Extract only valid JSON in the exact shape shown below, with no explanations, no markdown, and no extra fields. If the receipt cannot be parsed, return a JSON object with the same keys and sensible fallback values.
+  const prompt = `You are a receipt parser. Extract data from the attached receipt image or PDF and return ONLY a valid JSON object — no explanations, no markdown, no extra text.
 
+CRITICAL RULES:
+1. CURRENCY CONVERSION: If the receipt amount is in any currency other than INR (e.g. USD, EUR, GBP, AED, etc.), you MUST convert it to Indian Rupees (INR) using approximate current exchange rates. For example: $10 USD ≈ 840 INR, €10 EUR ≈ 920 INR, £10 GBP ≈ 1060 INR. Always return the converted INR value in the "amount" field.
+2. The "currency" field must ALWAYS be "INR" regardless of the original currency on the receipt.
+3. The "receipt_date" must be in "YYYY-MM-DD" format regardless of how it appears on the receipt. If missing, return "".
+4. Item prices must also be converted to INR.
+
+Return this exact JSON shape:
 {
   "vendor": "string",
   "amount": number,
-  //convert TO INR based on that hour's exchange rate. If the amount is missing or cannot be parsed,
-  //return 0. For example, if the receipt says $10 and the exchange rate at that time was 1 USD = 80 INR, 
-  //return 800.
   "currency": "INR",
-  "receipt_date": "YYYY-MM-DD", //regardless of how the date is formatted on the receipt, convert it to this standard format. If the date is missing or cannot be parsed, return an empty string.
+  "receipt_date": "YYYY-MM-DD",
   "timestamp": "HH:MM:SS",
   "category": "food/travel/office/medical/utilities/entertainment/other",
   "items": [
     { "name": "string", "quantity": number, "price": number }
   ],
   "confidence_score": number
-
 }
 
-Analyze the attached receipt image or PDF and return ONLY the JSON object.`;
+Analyze the attached receipt and return ONLY the JSON object.`;
 
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,

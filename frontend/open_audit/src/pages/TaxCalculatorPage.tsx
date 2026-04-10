@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { HistoryEntry } from '../types/index.ts';
 
+interface ReceiptRow {
+  id: number;
+  vendor: string;
+  amount: number;
+  category: string;
+  is_flagged: boolean;
+}
 
 function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) => void }) {
   const [basic, setBasic] = useState({ income: "", investments80c: "", rent: "" });
@@ -11,7 +18,30 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [receipts, setReceipts] = useState<Receipts[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
+
+  // Fetch receipts on mount so user sees what will be included
+  useEffect(() => {
+    const fetchReceipts = async () => {
+      try {
+        const resp = await axios.get('http://localhost:5000/api/receipts', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = Array.isArray(resp.data) ? resp.data : (resp.data?.receipts || []);
+        setReceipts(data);
+      } catch (e) {
+        console.error('Failed to fetch receipts for calculator:', e);
+      }
+    };
+    fetchReceipts();
+  }, []);
+
+  // Summarize valid (non-flagged) receipts by category
+  const receiptSummary = useMemo(() => {
+    const valid = receipts.filter(r => !r.is_flagged);
+    const total = valid.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    return { count: valid.length, total };
+  }, [receipts]);
 
   const handleCompute = async () => {
     if (!basic.income || Number(basic.income) <= 0) {
@@ -27,7 +57,8 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         annualIncome: Number(basic.income) || 0,
         investments: Number(basic.investments80c) || 0,
         otherDeductions: (Number(advanced.medical) || 0) + (Number(advanced.eduLoan) || 0) + (Number(advanced.nps) || 0),
-        rentPaid: Number(basic.rent) || 0
+        rentPaid: Number(basic.rent) || 0,
+        includeReceipts: true  // Tell backend to pull receipt data into deductions
       };
 
       const resp = await axios.post('http://localhost:5000/api/tax/calculate', payload, {
@@ -180,6 +211,8 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
               )}
             </div>
 
+            
+
             <div style={{ minHeight: '68px', padding: '20px', borderRadius: '24px', background: '#fff', boxShadow: '0 24px 80px rgba(15, 23, 42, 0.04)', border: '1px solid #e2e8f0', marginRight:'15px'}}>
               {error ? (
                 <div style={{ color: '#e74c3c', textAlign: 'center', fontWeight: 600 }}>{error}</div>
@@ -191,6 +224,12 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
                 </div>
               )}
             </div>
+            
+            {receiptSummary.count > 0 && (
+              <div style={{ padding: '14px 20px', borderRadius: '12px', background: '#eef6ff', border: '1px solid #c8dbfa', fontSize: '0.88rem', color: '#0f1f4b', marginRight:'15px'}}>
+                <strong>{receiptSummary.count}</strong> receipt{receiptSummary.count > 1 ? 's' : ''} worth <strong>{receiptSummary.total.toLocaleString('en-IN')} Rs</strong> will be auto-included in deductions
+              </div>
+            )}
           </div>
         </div>
       </div>
