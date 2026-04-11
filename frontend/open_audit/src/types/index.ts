@@ -2,6 +2,7 @@ export type Screen = "splash" | "login" | "register" | "home" | "calculator" | "
 export type Role = "User" | "Admin";
  
 export interface HistoryEntry {
+id: number;
   created_at: string;
   annualincome: number;
   calculated_old_tax: number;

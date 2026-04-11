@@ -83,14 +83,14 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
     }
   };
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(fileUrl);
-      setMessage('Link copied to clipboard.');
-    } catch {
-      setMessage('Copy failed. Please copy the link manually.');
-    }
-  };
+//   const handleCopyLink = async () => {
+//     try {
+//       await navigator.clipboard.writeText(fileUrl);
+//       setMessage('Link copied to clipboard.');
+//     } catch {
+//       setMessage('Copy failed. Please copy the link manually.');
+//     }
+//   };
 
   const handlePreview = async () => {
     setLoading(true);

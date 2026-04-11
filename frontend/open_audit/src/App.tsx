@@ -72,7 +72,7 @@ import { AuthProvider } from './contexts/AuthContext.tsx';
 //     </Router>
 //   );
 // }
-import { globalStyles } from './styles/global.ts';
+// import { globalStyles } from './styles/global.ts';
 function App() {
   const [screen, setScreen] = useState<Screen>(() => {
     return localStorage.getItem('token') ? "home" : "splash";

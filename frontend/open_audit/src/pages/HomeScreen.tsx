@@ -56,16 +56,16 @@ function HomeScreen({ onNav }: { onNav: (s: Screen) => void }) {
 
   const totalSpent = useMemo(() => receipts.reduce((sum, r) => sum + (Number(r.amount) || 0), 0), [receipts]);
 
-  const canonicalizeCategory = (value: string) => {
-    const raw = String(value || '').trim().toLowerCase();
-    if (!raw) return 'Other';
-    if (raw === 'rent receipt' || raw.includes('rent') || raw.includes('hra')) return 'Rent Receipt';
-    if (raw === 'form 16' || raw === 'form16' || raw.includes('form16')) return 'Form 16';
-    if (raw === 'investment proof' || raw.includes('invest') || raw.includes('80c') || raw.includes('proof')) return 'Investment Proof';
-    if (raw === 'medical bills' || raw.includes('medical') || raw.includes('health') || raw.includes('hospital')) return 'Medical Bills';
-    if (raw === 'bank statement' || raw.includes('bank') || raw.includes('statement')) return 'Bank Statement';
-    return 'Other';
-  };
+  // const canonicalizeCategory = (value: string) => {
+  //   const raw = String(value || '').trim().toLowerCase();
+  //   if (!raw) return 'Other';
+  //   if (raw === 'rent receipt' || raw.includes('rent') || raw.includes('hra')) return 'Rent Receipt';
+  //   if (raw === 'form 16' || raw === 'form16' || raw.includes('form16')) return 'Form 16';
+  //   if (raw === 'investment proof' || raw.includes('invest') || raw.includes('80c') || raw.includes('proof')) return 'Investment Proof';
+  //   if (raw === 'medical bills' || raw.includes('medical') || raw.includes('health') || raw.includes('hospital')) return 'Medical Bills';
+  //   if (raw === 'bank statement' || raw.includes('bank') || raw.includes('statement')) return 'Bank Statement';
+  //   return 'Other';
+  // };
 
   const taxDeductible = useMemo(() => {
     return receipts
