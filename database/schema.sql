@@ -79,13 +79,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
   metadata JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_receipts_user ON receipts(user_id);
-CREATE INDEX IF NOT EXISTS idx_receipts_org ON receipts(org_id);
-CREATE INDEX IF NOT EXISTS idx_receipts_flagged ON receipts(is_flagged);
-CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts(receipt_date);
-CREATE INDEX IF NOT EXISTS idx_doc_access_user ON document_access(granted_to_user_id);
-ALTER TABLE users ADD COLUMN role text;
-ALTER TABLE receipts DROP COLUMN raw_gemini_response, ADD COLUMN timestamp TIMESTAMP WITH TIME ZONE DEFAULT now();
+
 CREATE TABLE IF NOT EXISTS transactions(
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -115,5 +109,17 @@ CREATE TABLE IF NOT EXISTS transactions(
     --creation
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_receipts_user ON receipts(user_id);
+CREATE INDEX IF NOT EXISTS idx_receipts_org ON receipts(org_id);
+CREATE INDEX IF NOT EXISTS idx_receipts_flagged ON receipts(is_flagged);
+CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts(receipt_date);
+CREATE INDEX IF NOT EXISTS idx_doc_access_user ON document_access(granted_to_user_id);
+
+ALTER TABLE users ADD COLUMN role text;
+ALTER TABLE receipts DROP COLUMN raw_gemini_response, ADD COLUMN timestamp TIMESTAMP WITH TIME ZONE DEFAULT now();
+
+
+
 ALTER TABLE receipts DROP COLUMN timestamp;
 ALTER TABLE receipts add column transaction_time TIME;
