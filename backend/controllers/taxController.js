@@ -7,10 +7,10 @@ exports.calculateTax = async (req, res) => {
         return isNaN(parsed) ? 0 : parsed;
     };
     // Convert strings to numbers (just in case)
-    const income = safeParse(annualIncome);
+    let income = safeParse(annualIncome);
     let inv80c = safeParse(investments); // Max limit is usually 1.5L
     let other = safeParse(otherDeductions);
-    const rent = safeParse(rentPaid);
+    let rent = safeParse(rentPaid);
     const userId = req.user.id;
 
     try {
@@ -29,6 +29,8 @@ exports.calculateTax = async (req, res) => {
                     other += amount;
                 } else if (cat.includes('investment') || cat.includes('insurance') || cat.includes('pf') || cat.includes('80c')) {
                     inv80c += amount;
+                } else if (cat.includes('rent')) {
+                    rent += amount;
                 }
             });
         }
@@ -113,7 +115,8 @@ exports.calculateTax = async (req, res) => {
             },
             recommendation,
             finalTax,
-            savings
+            savings,
+            usedVariables: { income, investments: inv80c, otherDeductions: other, rentPaid: rent }
         });
 
     } catch (err) {
@@ -138,10 +141,10 @@ exports.saveTax = async (req, res) => {
             return isNaN(parsed) ? 0 : parsed;
         };
 
-        const income = safeParse(annualIncome);
+        let income = safeParse(annualIncome);
         let inv80c = safeParse(investments);
         let other = safeParse(otherDeductions);
-        const rent = safeParse(rentPaid);
+        let rent = safeParse(rentPaid);
 
         if (includeReceipts) {
             const receiptsResp = await db.query(
@@ -157,6 +160,8 @@ exports.saveTax = async (req, res) => {
                     other += amount;
                 } else if (cat.includes('investment') || cat.includes('insurance') || cat.includes('pf') || cat.includes('80c')) {
                     inv80c += amount;
+                } else if (cat.includes('rent')) {
+                    rent += amount;
                 }
             });
         }
