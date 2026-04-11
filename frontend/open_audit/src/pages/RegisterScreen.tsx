@@ -24,7 +24,7 @@ function RegisterScreen({ onNav }: { onNav: (s: Screen) => void }) {
         password,
         role: role.toLowerCase()
       };
-      const resp = await axios.post('http://localhost:5000/api/auth/register', payload);
+      const resp = await axios.post((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/auth/register', payload);
       if (resp.data.token) {
         localStorage.setItem('token', resp.data.token);
         onNav("home");

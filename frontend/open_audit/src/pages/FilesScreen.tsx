@@ -20,7 +20,7 @@ function FilesScreen() {
 
   const fetchReceipts = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/receipts', {
+      const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/receipts', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setReceipts(response.data.receipts || []);
@@ -53,7 +53,7 @@ function FilesScreen() {
     formData.append('category', activeType);
 
     try {
-      await axios.post('http://localhost:5000/api/upload', formData, {
+      await axios.post((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -118,7 +118,7 @@ function FilesScreen() {
     if (!filePath.startsWith('http://') && !filePath.startsWith('https://')) {
       let normalizedPath = filePath.replace(/\\/g, '/');
       if (normalizedPath.startsWith('/')) normalizedPath = normalizedPath.substring(1);
-      fileUrl = `http://localhost:5000/${normalizedPath}`;
+      fileUrl = `${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/${normalizedPath}`;
     }
     console.log('Preview URL:', fileUrl);
 
@@ -149,7 +149,7 @@ function FilesScreen() {
         if (normalizedPath.startsWith('/')) {
           normalizedPath = normalizedPath.substring(1);
         }
-        url = `http://localhost:5000/${normalizedPath}`;
+        url = `${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/${normalizedPath}`;
       }
       console.log('Download URL:', url);
       const response = await fetch(url);
@@ -186,7 +186,7 @@ function FilesScreen() {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/receipts/${receiptId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/receipts/${receiptId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setToast('File deleted successfully');

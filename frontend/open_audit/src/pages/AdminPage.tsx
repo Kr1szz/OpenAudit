@@ -21,7 +21,7 @@ function AdminPage() {
 
   const fetchReceipts = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/receipts');
+      const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/receipts');
       setReceipts(response.data);
     } catch (error) {
       console.error('Error fetching receipts:', error);

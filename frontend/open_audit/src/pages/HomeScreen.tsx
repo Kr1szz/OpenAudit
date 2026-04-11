@@ -28,7 +28,7 @@ function HomeScreen({ onNav }: { onNav: (s: Screen) => void }) {
   useEffect(() => {
     const fetchReceipts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/receipts', {
+        const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/receipts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         const receiptsData = Array.isArray(response.data) ? response.data : (response.data?.receipts || []);
@@ -43,7 +43,7 @@ function HomeScreen({ onNav }: { onNav: (s: Screen) => void }) {
   useEffect(() => {
     const fetchTaxHistory = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/tax/history', {
+        const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/history', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setTaxHistory(response.data.history || []);

@@ -13,7 +13,7 @@ function HistoryScreen() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/tax/history', {
+      const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/history', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory(response.data.history || []);
@@ -29,7 +29,7 @@ function HistoryScreen() {
   const deleteEntry = async (id: number) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/tax/history/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/tax/history/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory(prev => prev.filter(entry => entry.id !== id));
@@ -44,7 +44,7 @@ function HistoryScreen() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete('http://localhost:5000/api/tax/history', {
+      await axios.delete((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/history', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory([]);
