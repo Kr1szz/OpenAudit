@@ -5,5 +5,6 @@ const { authenticate } = require('../middleware/authMiddleware');
 router.get('/:id/download', authenticate, reportController.downloadReport);
 router.get('/:id/share-link', authenticate, reportController.createShareLink);
 router.get('/:id/public/:token/download', reportController.downloadPublicReport);
+router.get('/:id/cloudinary', authenticate, reportController.getCloudinaryUrl);
 
 module.exports = router;

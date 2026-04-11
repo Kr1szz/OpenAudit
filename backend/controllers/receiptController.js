@@ -60,7 +60,7 @@ async function uploadReceipt(req, res) {
   }
 
   try {
-    const data = await parseReceipt(filePath);
+    const data = await parseReceipt(filePath, req.file.mimetype);
     const { vendor, amount, receipt_date, timestamp, category, items, confidence_score, currency } = data;
     const normalizedCategory = normalizeCategory(category, req.body?.category);
 
@@ -107,13 +107,11 @@ async function uploadReceipt(req, res) {
 
     const financialAggregate = aggregateFinancials(aggregateDocuments);
 
-    // Store relative path for serving via /uploads endpoint
-    const relativePath = `uploads/${req.file.filename}`;
-    
+    // Store cloudinary URL
     const result = await Receipt.create({
       user_id: req.user.id,
       org_id: req.user.org_id,
-      file_path: relativePath,
+      file_path: filePath, // Cloudinary uses req.file.path as the URL
       file_type: req.file.mimetype,
       vendor,
       amount,
@@ -161,16 +159,10 @@ async function deleteReceipt(req, res) {
       return res.status(404).json({ success: false, error: 'Receipt not found' });
     }
 
-    const filePath = existing.file_path;
-    if (filePath) {
-      const absolutePath = path.join(__dirname, '..', filePath);
-      fs.unlink(absolutePath, (unlinkErr) => {
-        if (unlinkErr && unlinkErr.code !== 'ENOENT') {
-          console.error('Failed to delete file:', unlinkErr);
-        }
-      });
-    }
-
+    // Cloudinary files are hosted remotely. We could use cloudinary.uploader.destroy here
+    // if we parsed the public_id from existing.file_path, but for now we'll just not
+    // crash trying to run fs.unlink on a URL.
+    
     await Receipt.deleteById(receiptId, req.user.id);
     return res.status(200).json({ success: true, message: 'Receipt deleted' });
   } catch (err) {

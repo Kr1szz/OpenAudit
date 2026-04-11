@@ -19,6 +19,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [publicReportUrl, setPublicReportUrl] = useState("");
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
 
   // Fetch receipts on mount so user sees what will be included
@@ -89,6 +90,14 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         });
 
         mappedResult.savedRecord = saveResponse.data.record || saveResponse.data.transaction;
+        if (mappedResult.savedRecord?.id) {
+           try {
+             const cResp = await axios.get(`http://localhost:5000/api/reports/${mappedResult.savedRecord.id}/cloudinary`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+             });
+             setPublicReportUrl(cResp.data.url);
+           } catch(e) { console.error('Failed fetching cloudinary link', e); }
+        }
         if (mappedResult.savedRecord) {
           onAddHistory({
             created_at: new Date().toISOString(),
@@ -115,6 +124,12 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
   const handleSaveResult = async () => {
     if (!result) return;
     if (result.savedRecord?.id) {
+      try {
+        const cResp = await axios.get(`http://localhost:5000/api/reports/${result.savedRecord.id}/cloudinary`, {
+           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        setPublicReportUrl(cResp.data.url);
+      } catch(e) { console.error('Failed fetching cloudinary link', e); }
       setSuccess("Tax analysis saved successfully.");
       setTimeout(() => {
         setSuccess("");
@@ -153,6 +168,13 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         recommendation: payload.recommendation,
         savings: payload.savings
       });
+
+      try {
+        const cResp = await axios.get(`http://localhost:5000/api/reports/${savedRecord.id}/cloudinary`, {
+           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        setPublicReportUrl(cResp.data.url);
+      } catch(e) { console.error('Failed fetching cloudinary link', e); }
 
       setSuccess("Tax analysis saved successfully.");
       setTimeout(() => {
@@ -233,13 +255,13 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
                     <button className="run-pill" onClick={handleSaveResult} disabled={saving} style={{ flex: 1 }}>
                       {saving ? 'Saving...' : 'Save Analysis'}
                     </button>
-                    <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
+                    <button className="run-pill" onClick={() => { setResult(null); setError(""); setSuccess(""); setPublicReportUrl(""); }} style={{ flex: 1, background: '#f8fafc', color: '#000', border: '1px solid #e2e8f0' }}>
                       Recalculate
                     </button>
               
                   </div>
-                  {result.savedRecord?.id && (
-                    <ShareReport fileUrl={`http://localhost:5000/api/reports/${result.savedRecord.id}/download`} />
+                  {(publicReportUrl || result.savedRecord?.id) && (
+                    <ShareReport fileUrl={publicReportUrl || `http://localhost:5000/api/reports/${result.savedRecord?.id}/download`} />
                   )}
                 </div>
               ) : (

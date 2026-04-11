@@ -12,10 +12,14 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
   const getAuthToken = () => localStorage.getItem('token');
 
   const fetchPdfBlob = async () => {
+    const isCloudinary = fileUrl.includes('cloudinary.com');
     const headers: HeadersInit = {};
-    const token = getAuthToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
+    
+    if (!isCloudinary) {
+      const token = getAuthToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
     }
 
     const response = await fetch(fileUrl, { headers });
@@ -45,7 +49,10 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
   };
 
   const openPdfBlob = (blob: Blob) => {
-    const previewUrl = URL.createObjectURL(blob);
+    // Force the mime-type to application/pdf. If Cloudinary returns application/octet-stream 
+    // for raw files lacking an extension, the browser forces a download instead of a preview!
+    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+    const previewUrl = URL.createObjectURL(pdfBlob);
     window.open(previewUrl, '_blank', 'noopener,noreferrer');
     setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
   };
@@ -90,6 +97,7 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
     setMessage('');
 
     try {
+      // Regardless of Cloudinary or local, fetch to memory Blob to bypass Cloudinary's forced `Content-Disposition: attachment` headers
       const blob = await fetchPdfBlob();
       openPdfBlob(blob);
       setMessage('Report preview opened.');
@@ -127,33 +135,6 @@ const ShareReport = ({ fileUrl }: ShareReportProps) => {
         >
           Download Report
         </button>
-        <button
-          type="button"
-          onClick={handleCopyLink}
-          className="run-pill share-report-button share-report-button-gold"
-        >
-          Copy Link
-        </button>
-      </div>
-
-      <div className="share-report-manual">
-        <p>Manual sharing options:</p>
-        <div className="share-report-links">
-          <a
-            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(fileUrl)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="share-report-link share-report-link-whatsapp"
-          >
-            WhatsApp Link
-          </a>
-          <a
-            href={`mailto:?subject=${encodeURIComponent('Financial Report')}&body=${encodeURIComponent('Here is my report: ' + fileUrl)}`}
-            className="share-report-link share-report-link-email"
-          >
-            Email Link
-          </a>
-        </div>
       </div>
 
       {message && <p className="share-report-message">{message}</p>}

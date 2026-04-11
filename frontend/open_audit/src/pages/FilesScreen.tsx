@@ -72,28 +72,85 @@ function FilesScreen() {
     }
   };
 
-  const handlePreview = (filePath: string) => {
-    const normalizedPath = filePath.replace(/\\/g, '/');
-    const url = `http://localhost:5000/${normalizedPath}`;
-    console.log('Preview URL:', url);
-    fetch(url).then(res => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      window.open(url, '_blank');
-    }).catch(err => {
-      console.error('Preview error:', err);
-      setToast(`Cannot preview file: ${(err as any).message}`);
-      setTimeout(() => setToast(""), 3000);
-    });
+  const getAuthToken = () => localStorage.getItem('token');
+
+  const fetchPdfBlob = async (fileUrl:string) => {
+    const isCloudinary = fileUrl.includes('cloudinary.com');
+    const headers: HeadersInit = {};
+    
+    if (!isCloudinary) {
+      const token = getAuthToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    const response = await fetch(fileUrl, { headers });
+    if (!response.ok) {
+      let errorMessage = 'Unable to fetch report file.';
+      try {
+        const data = await response.json();
+        errorMessage = data?.error || errorMessage;
+      } catch {
+        // Keep the generic message when the server does not return JSON.
+      }
+      throw new Error(errorMessage);
+    }
+    return await response.blob();
+  };
+
+  const openPdfBlob = (blob: Blob) => {
+    // Read the native mime-type of the fetched stream
+    let mimeType = blob.type;
+    // Cloudinary returns application/octet-stream for raw files lacking an extension, so we force-cast those strictly to PDF
+    if (!mimeType || mimeType === 'application/octet-stream') {
+      mimeType = 'application/pdf';
+    }
+    const safeBlob = new Blob([blob], { type: mimeType });
+    const previewUrl = URL.createObjectURL(safeBlob);
+    window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
+  };
+
+  const handlePreview = async (filePath: string) => {
+    let fileUrl = filePath;
+    // Restore legacy logic for old files that weren't uploaded to Cloudinary
+    if (!filePath.startsWith('http://') && !filePath.startsWith('https://')) {
+      let normalizedPath = filePath.replace(/\\/g, '/');
+      if (normalizedPath.startsWith('/')) normalizedPath = normalizedPath.substring(1);
+      fileUrl = `http://localhost:5000/${normalizedPath}`;
+    }
+    console.log('Preview URL:', fileUrl);
+
+    // CRITICAL: Cloudinary 'raw' PDFs STRICTLY enforce 'Content-Disposition: attachment' headers.
+    // Calling window.open() on them forces a download.
+    // By silently fetching the file into memory and creating an Object URL, we bypass this header and force the browser to Preview the PDF.
+    try {
+      if (fileUrl.includes('.pdf') || fileUrl.includes('cloudinary.com')) {
+        const blob = await fetchPdfBlob(fileUrl);
+        openPdfBlob(blob);
+      } else {
+        // Images can just be opened normally
+        window.open(fileUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err: any) {
+      console.log('Preview fetch error:', err);
+      // Absolute fallback if fetch fails for any reason
+      window.open(fileUrl, '_blank');
+    }
   };
 
   const handleDownload = async (filePath: string, fileName: string) => {
     try {
-      let normalizedPath = filePath.replace(/\\/g, '/');
-      // If the path doesn't start with uploads/, assume it needs it or just cleanly prepend the base URL
-      if (normalizedPath.startsWith('/')) {
-        normalizedPath = normalizedPath.substring(1);
+      let url = filePath;
+      if (!filePath.startsWith('http://') && !filePath.startsWith('https://')) {
+        let normalizedPath = filePath.replace(/\\/g, '/');
+        // If the path doesn't start with /uploads, assume it needs it or just cleanly prepend the base URL
+        if (normalizedPath.startsWith('/')) {
+          normalizedPath = normalizedPath.substring(1);
+        }
+        url = `http://localhost:5000/${normalizedPath}`;
       }
-      const url = `http://localhost:5000/${normalizedPath}`;
       console.log('Download URL:', url);
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -101,7 +158,7 @@ function FilesScreen() {
       const objUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objUrl;
-      
+
       // Ensure the filename has a proper extension
       let finalName = fileName;
       if (!finalName.includes('.')) {
@@ -110,7 +167,7 @@ function FilesScreen() {
         const ext = extMatch ? extMatch[1] : 'pdf';
         finalName = `${fileName}.${ext}`;
       }
-      
+
       link.setAttribute('download', finalName);
       document.body.appendChild(link);
       link.click();
@@ -145,101 +202,101 @@ function FilesScreen() {
   return (
     <div className="screen">
       <div className="history-wrapper" style={{ overflow: 'hidden', maxHeight: 'calc(100vh - 260px)' }}>
-          <div className="files-header">
-            <div className="page-title" style={{ margin: 0, fontSize: '1.7rem' }}>Files</div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="table-btn table-btn-blue"
-              style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-            >
-              Upload Document
-            </button>
-          </div>
-
-          {receipts.length > 0 ? (
-            <div className="history-table-wrapper" style={{ maxHeight: 'calc(100vh - 320px)' }}>
-              <table className="history-table">
-                <thead>
-                  <tr>
-                    <th>Vendor</th>
-                    <th>Amount</th>
-                    <th>Category</th>
-                    <th>Flags</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receipts.map(r => (
-                    <tr key={r.id}>
-                      <td className="bold">{r.vendor}</td>
-                      <td className="mono">{r.amount} {r.currency}</td>
-                      <td>{r.category || 'Other'}</td>
-                      <td>
-                        {r.is_flagged ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {r.anomaly_reasons && r.anomaly_reasons.length > 0 ? (
-                              r.anomaly_reasons.map((reasonObj: any, idx: number) => {
-                                let typeStr = '';
-                                let severityStr = 'low';
-                                
-                                if (typeof reasonObj === 'object' && reasonObj !== null) {
-                                  typeStr = reasonObj.type || reasonObj.message || 'Flagged';
-                                  severityStr = reasonObj.severity ? String(reasonObj.severity).toLowerCase() : 'low';
-                                } else {
-                                  typeStr = String(reasonObj);
-                                  severityStr = typeStr.toLowerCase().includes('high') ? 'high' : typeStr.toLowerCase().includes('medium') ? 'medium' : 'low';
-                                }
-
-                                // Format the type (e.g., 'missing_amount' -> 'Missing Amount')
-                                typeStr = typeStr.replace(/_/g, ' ')
-                                  .split(' - ')[0] // Extract just the type portion
-                                  .split(':')[1]?.split(",")[0] || typeStr; // Handle "Type: XYZ" format safely
-                                typeStr = typeStr.replace(/["'{}]/g, '').trim(); // Remove quotes, braces, and extra spaces
-                                typeStr = typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
-                                
-                                const color = (severityStr === 'high' || severityStr === 'critical') ? '#dc2626' 
-                                            : severityStr === 'medium' ? '#f97316' 
-                                            : '#ea580c';
-
-                                return (
-                                  <div key={idx} style={{ fontSize: '0.82rem', color, fontWeight: 600 }}>
-                                    <span className="capitalize">{typeStr.toString()}</span> 
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <div style={{ fontSize: '0.82rem', color: '#e74c3c', fontWeight: 500 }}>
-                                • Review needed
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 500 }}>✓ Clean</div>
-                        )}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          <button onClick={() => handlePreview(r.file_path)} title="Preview file" className="table-btn table-btn-blue">Preview</button>
-                          <button onClick={() => {
-                            const originalExt = r.file_path.split('.').pop();
-                            const fallbackExt = (r.file_type || '').split('/')[1] || 'pdf';
-                            const docExt = (originalExt && originalExt.length <= 4) ? originalExt : fallbackExt;
-                            handleDownload(r.file_path, `${r.vendor}_${r.id}.${docExt}`);
-                          }} title="Download file" className="table-btn table-btn-green">Download</button>
-                          <button onClick={() => handleDelete(r.id)} title="Delete file" className="table-btn table-btn-red">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#6b7280' }}>
-              No documents uploaded yet. Click "Upload Document" to add your first document.
-            </div>
-          )}
+        <div className="files-header">
+          <div className="page-title" style={{ margin: 0, fontSize: '1.7rem' }}>Files</div>
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="table-btn table-btn-blue"
+            style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+          >
+            Upload Document
+          </button>
         </div>
+
+        {receipts.length > 0 ? (
+          <div className="history-table-wrapper" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>Vendor</th>
+                  <th>Amount</th>
+                  <th>Category</th>
+                  <th>Flags</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipts.map(r => (
+                  <tr key={r.id}>
+                    <td className="bold">{r.vendor}</td>
+                    <td className="mono">{r.amount} {r.currency}</td>
+                    <td>{r.category || 'Other'}</td>
+                    <td>
+                      {r.is_flagged ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {r.anomaly_reasons && r.anomaly_reasons.length > 0 ? (
+                            r.anomaly_reasons.map((reasonObj: any, idx: number) => {
+                              let typeStr = '';
+                              let severityStr = 'low';
+
+                              if (typeof reasonObj === 'object' && reasonObj !== null) {
+                                typeStr = reasonObj.type || reasonObj.message || 'Flagged';
+                                severityStr = reasonObj.severity ? String(reasonObj.severity).toLowerCase() : 'low';
+                              } else {
+                                typeStr = String(reasonObj);
+                                severityStr = typeStr.toLowerCase().includes('high') ? 'high' : typeStr.toLowerCase().includes('medium') ? 'medium' : 'low';
+                              }
+
+                              // Format the type (e.g., 'missing_amount' -> 'Missing Amount')
+                              typeStr = typeStr.replace(/_/g, ' ')
+                                .split(' - ')[0] // Extract just the type portion
+                                .split(':')[1]?.split(",")[0] || typeStr; // Handle "Type: XYZ" format safely
+                              typeStr = typeStr.replace(/["'{}]/g, '').trim(); // Remove quotes, braces, and extra spaces
+                              typeStr = typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
+
+                              const color = (severityStr === 'high' || severityStr === 'critical') ? '#dc2626'
+                                : severityStr === 'medium' ? '#f97316'
+                                  : '#ea580c';
+
+                              return (
+                                <div key={idx} style={{ fontSize: '0.82rem', color, fontWeight: 600 }}>
+                                  <span className="capitalize">{typeStr.toString()}</span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div style={{ fontSize: '0.82rem', color: '#e74c3c', fontWeight: 500 }}>
+                              • Review needed
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 500 }}>✓ Clean</div>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button onClick={() => handlePreview(r.file_path)} title="Preview file" className="table-btn table-btn-blue">Preview</button>
+                        <button onClick={() => {
+                          const originalExt = r.file_path.split('.').pop();
+                          const fallbackExt = (r.file_type || '').split('/')[1] || 'pdf';
+                          const docExt = (originalExt && originalExt.length <= 4) ? originalExt : fallbackExt;
+                          handleDownload(r.file_path, `${r.vendor}_${r.id}.${docExt}`);
+                        }} title="Download file" className="table-btn table-btn-green">Download</button>
+                        <button onClick={() => handleDelete(r.id)} title="Delete file" className="table-btn table-btn-red">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: '60px', textAlign: 'center', color: '#6b7280' }}>
+            No documents uploaded yet. Click "Upload Document" to add your first document.
+          </div>
+        )}
+      </div>
 
       {showUploadModal && (
         <div style={{

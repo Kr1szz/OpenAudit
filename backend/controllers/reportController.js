@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { generateTaxPdf } = require('../services/pdfService');
 const jwt = require('jsonwebtoken');
+const { cloudinary } = require('../config/cloudinary');
 
 const REPORT_SHARE_SECRET = process.env.REPORT_SHARE_SECRET || process.env.JWT_SECRET || 'report-share-secret';
 const REPORT_SHARE_EXPIRES_IN = process.env.REPORT_SHARE_EXPIRES_IN || '7d';
@@ -138,5 +139,46 @@ exports.downloadPublicReport = async (req, res) => {
   } catch (error) {
     console.error('downloadPublicReport error:', error?.message || error);
     res.status(403).json({ error: 'Report share link is invalid or expired.' });
+  }
+};
+
+exports.getCloudinaryUrl = async (req, res) => {
+  try {
+    const reportId = parseInt(req.params.id, 10);
+    if (Number.isNaN(reportId) || reportId <= 0) {
+      return res.status(400).json({ error: 'Invalid report id.' });
+    }
+
+    const result = await db.query('SELECT * FROM transactions WHERE id=$1 AND user_id=$2', [reportId, req.user.id]);
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const tx = result.rows[0];
+    if (tx.report_url) {
+      return res.json({ url: tx.report_url });
+    }
+
+    const taxResult = buildTaxResultFromTransaction(tx);
+    const pdfBuffer = await generateTaxPdf(taxResult);
+
+    const cloudinaryResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: 'raw', format: 'pdf', folder: 'open_audit_reports' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(pdfBuffer);
+    });
+
+    const reportUrl = cloudinaryResult.secure_url;
+    await db.query('UPDATE transactions SET report_url=$1 WHERE id=$2', [reportUrl, reportId]);
+
+    res.json({ url: reportUrl });
+  } catch (err) {
+    console.error('getCloudinaryUrl error:', err);
+    res.status(500).json({ error: 'Error generating public report link.' });
   }
 };
