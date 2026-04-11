@@ -100,6 +100,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         }
         if (mappedResult.savedRecord) {
           onAddHistory({
+            id: mappedResult.savedRecord?.id || Date.now(),
             created_at: new Date().toISOString(),
             annualincome: mappedResult.savedRecord.annualincome ?? payload.annualIncome,
             calculated_old_tax: mappedResult.savedRecord.calculated_old_tax ?? mappedResult.oldRegimeTax,
