@@ -1,5 +1,7 @@
 # Open Audit - AI-Powered Expense Auditing System
 
+You can try Open Audit on: https://open-audit-dusky.vercel.app/
+
 An intelligent expense management platform that uses AI to extract data from receipts, detect fraud, calculate taxes, and provide actionable financial insights.
 
 ##  Quick Start
