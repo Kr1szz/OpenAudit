@@ -26,7 +26,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
   useEffect(() => {
     const fetchReceipts = async () => {
       try {
-        const resp = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/receipts', {
+        const resp = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/receipts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         const data = Array.isArray(resp.data) ? resp.data : (resp.data?.receipts || []);
@@ -63,7 +63,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         includeReceipts: true  // Tell backend to pull receipt data into deductions
       };
 
-      const resp = await axios.post((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/calculate', payload, {
+      const resp = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/tax/calculate', payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -79,7 +79,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
       };
 
       try {
-        const saveResponse = await axios.post((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/save', {
+        const saveResponse = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/tax/save', {
           annualIncome: payload.annualIncome,
           investments: payload.investments,
           otherDeductions: payload.otherDeductions,
@@ -92,7 +92,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         mappedResult.savedRecord = saveResponse.data.record || saveResponse.data.transaction;
         if (mappedResult.savedRecord?.id) {
            try {
-             const cResp = await axios.get(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/reports/${mappedResult.savedRecord.id}/cloudinary`, {
+             const cResp = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reports/${mappedResult.savedRecord.id}/cloudinary`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
              });
              setPublicReportUrl(cResp.data.url);
@@ -126,7 +126,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
     if (!result) return;
     if (result.savedRecord?.id) {
       try {
-        const cResp = await axios.get(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/reports/${result.savedRecord.id}/cloudinary`, {
+        const cResp = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reports/${result.savedRecord.id}/cloudinary`, {
            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setPublicReportUrl(cResp.data.url);
@@ -155,7 +155,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
         includeReceipts: result.payload_record?.includeReceipts ?? true,
       };
 
-      const response = await axios.post((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/save', payload, {
+      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/tax/save', payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const savedRecord = response.data.record || response.data.transaction;
@@ -172,7 +172,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
       });
 
       try {
-        const cResp = await axios.get(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/reports/${savedRecord.id}/cloudinary`, {
+        const cResp = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reports/${savedRecord.id}/cloudinary`, {
            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setPublicReportUrl(cResp.data.url);
@@ -263,7 +263,7 @@ function CalculatorScreen({ onAddHistory }: { onAddHistory: (e: HistoryEntry) =>
               
                   </div>
                   {(publicReportUrl || result.savedRecord?.id) && (
-                    <ShareReport fileUrl={publicReportUrl || `${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/reports/${result.savedRecord?.id}/download`} />
+                    <ShareReport fileUrl={publicReportUrl || `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reports/${result.savedRecord?.id}/download`} />
                   )}
                 </div>
               ) : (

@@ -20,7 +20,7 @@ function FilesScreen() {
 
   const fetchReceipts = async () => {
     try {
-      const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/receipts', {
+      const response = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/receipts', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setReceipts(response.data.receipts || []);
@@ -53,7 +53,7 @@ function FilesScreen() {
     formData.append('category', activeType);
 
     try {
-      await axios.post((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/upload', formData, {
+      await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -118,7 +118,7 @@ function FilesScreen() {
     if (!filePath.startsWith('http://') && !filePath.startsWith('https://')) {
       let normalizedPath = filePath.replace(/\\/g, '/');
       if (normalizedPath.startsWith('/')) normalizedPath = normalizedPath.substring(1);
-      fileUrl = `${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/${normalizedPath}`;
+      fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/${normalizedPath}`;
     }
     console.log('Preview URL:', fileUrl);
 
@@ -149,7 +149,7 @@ function FilesScreen() {
         if (normalizedPath.startsWith('/')) {
           normalizedPath = normalizedPath.substring(1);
         }
-        url = `${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/${normalizedPath}`;
+        url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/${normalizedPath}`;
       }
       console.log('Download URL:', url);
       const response = await fetch(url);
@@ -186,7 +186,7 @@ function FilesScreen() {
     }
 
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/receipts/${receiptId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/receipts/${receiptId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setToast('File deleted successfully');
@@ -228,10 +228,10 @@ function FilesScreen() {
               <tbody>
                 {receipts.map(r => (
                   <tr key={r.id}>
-                    <td className="bold">{r.vendor}</td>
-                    <td className="mono">{r.amount} {r.currency}</td>
-                    <td>{r.category || 'Other'}</td>
-                    <td>
+                    <td data-label="Vendor" className="bold">{r.vendor}</td>
+                    <td data-label="Amount" className="mono">{r.amount} {r.currency}</td>
+                    <td data-label="Category">{r.category || 'Other'}</td>
+                    <td data-label="Flags">
                       {r.is_flagged ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           {r.anomaly_reasons && r.anomaly_reasons.length > 0 ? (
@@ -274,8 +274,8 @@ function FilesScreen() {
                         <div style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 500 }}>✓ Clean</div>
                       )}
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <td data-label="Actions">
+                      <div className="mobile-action-btns" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <button onClick={() => handlePreview(r.file_path)} title="Preview file" className="table-btn table-btn-blue">Preview</button>
                         <button onClick={() => {
                           const originalExt = r.file_path.split('.').pop();

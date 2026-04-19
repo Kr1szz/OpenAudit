@@ -851,20 +851,55 @@ tbody tr {
   .home-body-grid {
     grid-template-columns: 1fr;
   }
+
+  .calc-wrapper {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 768px) {
   .navbar-wrapper {
-    padding: 8px 16px 0;
+    padding: 12px 16px 0;
+  }
+
+  .navbar {
+    height: auto;
+    padding: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .navbar-brand {
+    font-size: 1.2rem;
+    margin-right: auto;
+  }
+
+  .navbar-user {
+    margin-left: auto;
+  }
+
+  .navbar-links {
+    width: 100%;
+    justify-content: space-around;
+    padding: 8px 0 4px;
+    order: 3;
+    gap: 4px;
+  }
+
+  .nav-link {
+    font-size: 0.82rem;
+    padding: 8px 12px;
   }
 
   .home-wrapper,
   .page-container {
-    padding: 16px 20px;
+    padding: 16px 16px;
   }
 
   .history-wrapper {
     margin: 16px 16px 0;
+    min-height: calc(100vh - 200px);
   }
 
   .auth-card {
@@ -873,5 +908,154 @@ tbody tr {
 
   .dashboard-greeting h1 {
     font-size: 2.2rem;
+  }
+
+  .page-title {
+    font-size: 1.8rem;
+    margin-bottom: 24px;
+  }
+
+  .top-stat-card {
+    flex: 1 1 200px;
+    padding: 16px;
+  }
+
+  .chart-box {
+    padding: 20px 16px;
+  }
+
+  .calc-card {
+    padding: 20px;
+    margin-right: 0 !important;
+  }
+
+  .run-pill {
+    width: 100%;
+    margin-right: 0 !important;
+  }
+
+  /* Mobile card-style tables */
+  .history-table-wrapper {
+    overflow: auto; /* Removing scroll, making it stack */
+    margin: 0;
+    padding: 0;
+  }
+
+  .history-table, table {
+    min-width: 100%;
+    display: block;
+    margin-top: 10px;
+  }
+
+  .history-table thead, table thead {
+    display: none; /* Hide standard headers */
+  }
+
+  .history-table tbody, table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .history-table tr, table tr {
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+  }
+
+  /* Target body tds to act as flex rows */
+  .history-table tbody td, table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 !important;
+    border-bottom: 1px dashed #f1f5f9;
+    text-align: right;
+  }
+
+  /* Insert data-label before the actual content */
+  .history-table tbody td::before, table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-right: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .history-table td:last-child, table td:last-child {
+    border-bottom: none;
+    padding-bottom: 0 !important;
+    margin-top: 8px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-table td:last-child::before, table td:last-child::before {
+    align-self: flex-start;
+    margin-bottom: 12px;
+  }
+
+  /* Action buttons wrapper styling */
+  .mobile-action-btns {
+    flex-direction: column !important;
+    width: 100%;
+    gap: 12px !important;
+  }
+  
+  .table-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 0.95rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .files-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-stat-card {
+    flex: 1 1 100%;
+  }
+
+  .splash-logo {
+    font-size: 3.5rem;
+  }
+
+  .splash-btns {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 20px;
+  }
+
+  .splash-btn-primary, .splash-btn-ghost {
+    width: 100%;
+  }
+
+  .auth-title {
+    font-size: 2.2rem;
+  }
+  .table-btn {
+    width: 100%;
+    padding: 5px;
+    border-radius:10px;
+    font-size: 0.75rem;
+    justify-content: center;
+    text-align: center;
   }
 }

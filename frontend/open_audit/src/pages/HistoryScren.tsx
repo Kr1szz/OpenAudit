@@ -13,7 +13,7 @@ function HistoryScreen() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/history', {
+      const response = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/tax/history', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory(response.data.history || []);
@@ -29,7 +29,7 @@ function HistoryScreen() {
   const deleteEntry = async (id: number) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com'}/api/tax/history/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tax/history/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory(prev => prev.filter(entry => entry.id !== id));
@@ -44,7 +44,7 @@ function HistoryScreen() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/tax/history', {
+      await axios.delete((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/tax/history', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory([]);
@@ -100,13 +100,13 @@ function HistoryScreen() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '30px', color: '#6b7280', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '30px', color: '#6b7280', textAlign: 'center', display: 'block' }}>
                     Loading history...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '30px', color: '#e74c3c', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '30px', color: '#e74c3c', textAlign: 'center', display: 'block' }}>
                     {error}
                   </td>
                 </tr>
@@ -115,13 +115,13 @@ function HistoryScreen() {
                   const d = new Date(entry.created_at);
                   return (
                     <tr key={idx}>
-                      <td>{d.toLocaleDateString()}</td>
-                      <td className="mono">{entry.annualincome}</td>
-                      <td className="mono">{entry.calculated_old_tax?.toLocaleString()}</td>
-                      <td className="mono">{entry.calculated_new_tax?.toLocaleString()}</td>
-                      <td style={{ color: '#0d6efd' }} className="bold">{entry.recommendation}</td>
-                      <td style={{ color: '#1a9e5c' }} className="mono bold">{entry.savings?.toLocaleString()}</td>
-                      <td>
+                      <td data-label="Date">{d.toLocaleDateString()}</td>
+                      <td data-label="Annual Income" className="mono">{entry.annualincome}</td>
+                      <td data-label="Old Regime Tax" className="mono">{entry.calculated_old_tax?.toLocaleString()}</td>
+                      <td data-label="New Regime Tax" className="mono">{entry.calculated_new_tax?.toLocaleString()}</td>
+                      <td data-label="Recommendation" style={{ color: '#0d6efd' }} className="bold">{entry.recommendation}</td>
+                      <td data-label="Savings" style={{ color: '#1a9e5c' }} className="mono bold">{entry.savings?.toLocaleString()}</td>
+                      <td data-label="Actions">
                         <button
                           onClick={() => deleteEntry(entry.id)}
                           className="table-btn table-btn-red"
@@ -135,7 +135,7 @@ function HistoryScreen() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} style={{ padding: '30px', color: '#6b7280', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '30px', color: '#6b7280', textAlign: 'center', display: 'block' }}>
                     No history recorded yet. Run a tax analysis to see your past calculations here.
                   </td>
                 </tr>

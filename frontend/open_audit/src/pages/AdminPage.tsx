@@ -21,7 +21,7 @@ function AdminPage() {
 
   const fetchReceipts = async () => {
     try {
-      const response = await axios.get((import.meta.env.VITE_API_URL || 'https://openaudit.onrender.com') + '/api/receipts');
+      const response = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/receipts');
       setReceipts(response.data);
     } catch (error) {
       console.error('Error fetching receipts:', error);
@@ -58,11 +58,11 @@ function AdminPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {receipts.map((receipt) => (
               <tr key={receipt.id} className={receipt.flag ? 'bg-red-50' : ''}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{receipt.vendor}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${receipt.amount.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.date}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.user_id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td data-label="Vendor" className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{receipt.vendor}</td>
+                <td data-label="Amount" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${receipt.amount.toFixed(2)}</td>
+                <td data-label="Date" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.date}</td>
+                <td data-label="User ID" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{receipt.user_id}</td>
+                <td data-label="Flagged" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {receipt.flag ? 'Yes' : 'No'}
                 </td>
               </tr>
